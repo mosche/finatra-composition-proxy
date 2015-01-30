@@ -36,7 +36,7 @@ Fields and relations are requested according to the following grammar
 
 where Relation is appended to the request as follows: ...?properties= *Relation*
 
-## Finatra JSON composition example
+## Example
 
 Just a tiny example illustrating the idea of JSON composition to build up a powerful REST API backed by a *microservice* architecture.
 
@@ -46,4 +46,9 @@ There's actually no remote services used in this example. However, some fake ser
 
 ```sbt example/run```
 
-```curl http://localhost:7070/products/1?properties=product(id,reviews(categories(id)))```
+Queries:
+
+- Load a product with id and title only<br>
+ ```curl http://localhost:7070/products/1?properties=product(id,title)```
+- Load a product with all its categories, reviews and the reviewer<br>
+ ```curl http://localhost:7070/products/1?properties=product(id,title,reviews(stars,review,reviewer(username)),categories(id))```
