@@ -4,9 +4,9 @@ import net.mm.composer.relations.Relation._
 
 class ProductService extends FakeService {
   private val products = Seq(
-    Product(1, "computer", "laptop"), Product(2, "computer", "hardware", "storage"),
-    Product(3, "audio", "speaker"), Product(4, "audio", "car"), Product(5, "audio"),
-    Product(6, "bag", "laptop")
+    Product(1, "Apple iBook", "computer", "laptop"), Product(2, "WD My Passport External", "computer", "hardware", "storage"),
+    Product(3, "AudioStar Audio Speaker Pair", "audio", "speaker"), Product(4, "Boss Audio In-Dash", "audio", "car"), Product(5, "Stereo Audio Cable", "audio"),
+    Product(6, "Case Logic Laptop", "bag", "laptop")
   ).map(p => (p.id, p)).toMap
 
   val allProducts = products.values.toSeq
@@ -17,6 +17,6 @@ class ProductService extends FakeService {
   val getCategorySize: Executor[String, Int] = getProductsByCategories(_).map(_.mapValues(_.size))
 }
 
-case class Product(id: Int, categoryIds: String*)
+case class Product(id: Int, title: String, categoryIds: String*)
 
 case class Category(id: String)
