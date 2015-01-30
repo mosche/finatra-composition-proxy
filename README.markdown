@@ -32,7 +32,7 @@ Fields and relations are requested according to the following grammar
 
 - Property => *Relation* **|** *Field*
 - Field => *AlphaNumericIdentifier*
-- Relation => *Field* . ( **(** *Property*, **)** ***** *Property* )
+- Relation => *Field* . ( **(** *Property*, **)** __*__ *Property* )
 
 where Relation is appended to the request as follows: ...?properties= *Relation*
 
