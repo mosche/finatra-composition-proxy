@@ -26,6 +26,15 @@ It consists of:
 - an **execution scheduler** for parallel execution
 - a **json composer** to construct the final response
 
+### Properties parser
+
+Fields and relations are requested according to the following grammar
+
+- Property => *Relation* **|** *Field*
+- Field => *AlphaNumericIdentifier*
+- Relation => *Field* . ( **(** *Property*, **)\*** *Property* )
+
+where Relation is appended to the request as follows: ...?properties= *Relation*
 
 ## Finatra JSON composition example
 
