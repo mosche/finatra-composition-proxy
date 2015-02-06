@@ -3,7 +3,6 @@ package net.mm.composer.relations
 import net.mm.composer.FutureSupport._
 import net.mm.composer.relations.Relation._
 
-
 case class Product(id: Int, categoryIds: String*)
 
 case class Category(id: String)
@@ -28,6 +27,10 @@ trait TestCases {
     val categoryKey = RelationKey {
       case p: Product => p.categoryIds
       case c: Category => Some(c.id)
+    }
+
+    val reviewKey = RelationKey.lift {
+      case r: Review => r.id
     }
   }
 

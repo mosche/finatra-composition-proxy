@@ -18,7 +18,7 @@ class ExecutionPlanBuilderSuite extends FunSuite with TestCasesRelationRegistry 
 
   test("with reviews relation") {
     val propertyTree = RelationProperty("product", RelationProperty("reviews"))
-    executionPlan[Product](propertyTree) shouldBe Seq(TaskNode("reviews", relationRegistry.get[Product]("reviews").get))
+    executionPlan[Product](propertyTree) shouldBe Seq(TaskNode("reviews", relationRegistry.get(classOf[Product], "reviews").get))
   }
 
   test("optimized execution plan on key") {
@@ -26,8 +26,8 @@ class ExecutionPlanBuilderSuite extends FunSuite with TestCasesRelationRegistry 
     val plan = executionPlan[Product](propertyTree)
 
     plan shouldBe Seq(
-      TaskNode("categories", relationRegistry.get[Review]("categories").get),
-      TaskNode("reviews", relationRegistry.get[Product]("reviews").get)
+      TaskNode("categories", relationRegistry.get(classOf[Review], "categories").get),
+      TaskNode("reviews", relationRegistry.get(classOf[Product], "reviews").get)
     )
   }
 
@@ -36,9 +36,9 @@ class ExecutionPlanBuilderSuite extends FunSuite with TestCasesRelationRegistry 
     val plan = executionPlan[Product](propertyTree)
 
     plan shouldBe Seq(
-      TaskNode("reviews", relationRegistry.get[Product]("reviews").get),
-      TaskNode("categories", relationRegistry.get[Review]("categories").get,
-        TaskNode("size", relationRegistry.get[Category]("size").get)
+      TaskNode("reviews", relationRegistry.get(classOf[Product], "reviews").get),
+      TaskNode("categories", relationRegistry.get(classOf[Review], "categories").get,
+        TaskNode("size", relationRegistry.get(classOf[Category], "size").get)
       )
     )
   }
@@ -53,8 +53,8 @@ class ExecutionPlanBuilderSuite extends FunSuite with TestCasesRelationRegistry 
     val plan = executionPlan[Product](propertyTree)
 
     plan shouldBe Seq(
-      TaskNode("reviews", relationRegistry.get[Product]("reviews").get,
-        TaskNode("reviewer", relationRegistry.get[Review]("reviewer").get)
+      TaskNode("reviews", relationRegistry.get(classOf[Product], "reviews").get,
+        TaskNode("reviewer", relationRegistry.get(classOf[Review], "reviewer").get)
       )
     )
   }
