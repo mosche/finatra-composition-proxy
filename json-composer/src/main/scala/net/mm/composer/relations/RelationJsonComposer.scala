@@ -14,9 +14,7 @@ import scala.collection.JavaConversions._
 import scala.collection.parallel.ParSeq
 
 trait RelationJsonComposer {
-  def compose[T](obj: T)(propertyTree: PropertyTree)(implicit m: Manifest[T]): Future[JsonNode]
-
-  def compose[T](seq: Seq[T])(propertyTree: PropertyTree)(implicit m: Manifest[T]): Future[JsonNode]
+  def compose(obj: Any, clazz: Class[_])(propertyTree: PropertyTree): Future[JsonNode]
 }
 
 class RelationJsonComposerImpl(implicit executionScheduler: ExecutionScheduler, executionPlanBuilder: ExecutionPlanBuilder, registry: RelationRegistry) extends RelationJsonComposer {
@@ -65,25 +63,19 @@ class RelationJsonComposerImpl(implicit executionScheduler: ExecutionScheduler, 
     objNode
   }
 
-  private def executeAndCompose[T](propertyTree: PropertyTree, m: Manifest[T])(executer: ExecutionPlan => Future[RelationDataSource], composer: RelationDataSource => (Fields, ChildRelations) => JsonNode): Future[JsonNode] = {
-    val executionPlan = executionPlanBuilder(propertyTree, m.runtimeClass)
+  def compose(obj: Any, clazz: Class[_])(propertyTree: PropertyTree): Future[JsonNode] = {
+    val partialComposer = executeAndCompose(propertyTree, clazz)_
+    obj match {
+      case seq: Seq[_] => partialComposer(executionScheduler.run(seq), implicit dataSource => toArrayNode(_,_)(seq))
+      case _ => partialComposer(executionScheduler.run(obj), implicit dataSource => toObjectNode(_,_)(obj))
+    }
+  }
+
+
+  private def executeAndCompose[T](propertyTree: PropertyTree, clazz: Class[T])(executer: ExecutionPlan => Future[RelationDataSource], composer: RelationDataSource => (Fields, ChildRelations) => JsonNode): Future[JsonNode] = {
+    val executionPlan = executionPlanBuilder(propertyTree, clazz)
     executer(executionPlan).map(ds =>
-      composer(ds)(propertyTree.childNames, childRelations(propertyTree, m.runtimeClass))
+      composer(ds)(propertyTree.childNames, childRelations(propertyTree, clazz))
     )
   }
-
-  def compose[T](obj: T)(propertyTree: PropertyTree)(implicit m: Manifest[T]): Future[JsonNode] = {
-    executeAndCompose(propertyTree, m)(
-      executionScheduler.run(obj),
-      implicit dataSource => toObjectNode(_, _)(obj)
-    )
-  }
-
-  def compose[T](seq: Seq[T])(propertyTree: PropertyTree)(implicit m: Manifest[T]): Future[JsonNode] = {
-    executeAndCompose(propertyTree, m)(
-      executionScheduler.run(seq),
-      implicit dataSource => toArrayNode(_, _)(seq)
-    )
-  }
-
 }

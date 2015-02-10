@@ -1,49 +1,69 @@
 package net.mm.composer.relations
 
-import net.mm.composer.relations.Relation
-import net.mm.composer.relations.Relation.AnyRelation
+import com.twitter.finatra.{Request, ResponseBuilder}
+import com.twitter.util.Future
+import net.mm.composer.FinatraResponseComposer
+import net.mm.composer.RichRequest._
+import net.mm.composer.relations.Relation._
 import net.mm.composer.relations.RelationRegistry._
+import net.mm.composer.utils.ParamConverter
 
-class RegistryBuilder {
+import scala.collection.mutable.HashMap
 
-  private var relationsMap: Map[Class[_], Relations] = Map.empty
+class RegistryBuilder{
 
-  private var rootRelations: Map[String, AnyRelation] = Map.empty
+  private var resources: HashMap[String, Resource] = HashMap.empty
 
-  /**
-   * Builder for child relations
-   * @param clazz actually Class[From]
-   * @tparam From the root relation target type
-   */
-  class RelationsBuilder[From] private[RegistryBuilder] (clazz: Class[_]){
+  private var relationsMap: HashMap[Class[_], Relations] = HashMap.empty
 
-    /**
-     * Configure relations of a root relation
-     * @param relations as a pair (name -> relation) each
-     * @return the registry builder
-     */
-    def having(relations: (String, Relation[From, _, _])*): RegistryBuilder = {
-      RelationsBuilder.this.synchronized {
-        relationsMap = relationsMap + (clazz -> relations.toMap)
+  sealed trait Resource{
+    type LiftedRender = ResponseBuilder => FinatraResponseComposer#ComposingResponseBuilder
+    type Callback = (Request) => Future[ResponseBuilder]
+
+    def apply(render: ResponseBuilder)(implicit lift: LiftedRender): Callback
+  }
+
+  class ResourceById[K: ParamConverter](resolver: Executor[K, _], clazz: Class[_]) extends Resource {
+    override def apply(render: ResponseBuilder)(implicit lift: LiftedRender): Callback = implicit request => {
+      request.getRouteParam("id").fold(render.badRequest.toFuture)( id =>
+        resolver(Set(id)).flatMap{
+          case res if res.contains(id) => render.composedJson(res(id), clazz)
+          case _ => render.notFound.toFuture
+        }
+      )
+    }
+  }
+
+  class AsResource[T] private[RegistryBuilder](path: String, target: Class[_]){
+
+    def as[K: ParamConverter](key: RelationKey[_, K], resolver: Executor[K, T]): HavingRelations[K] = {
+      resources += s"$path/:id" -> new ResourceById(resolver, target)
+      new HavingRelations(key)
+    }
+
+    class HavingRelations[K: ParamConverter](key: RelationKey[_, K]){
+
+      def having(relations: (String, RelationFor[T])*): RegistryBuilder = {
+        relations.filter(_._2.key == key).foreach{
+          case (segment, relation: RelationWithKey[K]) =>
+            resources += s"$path/:id/$segment" -> new ResourceById(relation.apply, relation.target)
+        }
+
+        relationsMap += target -> relations.toMap
         RegistryBuilder.this
       }
     }
   }
-
+  
   /**
-   * Register a root relation with a name
-   * @param rootRelation as a pair (name -> relation)
+   * Register a relation as resource on a path
+   * @param path the path
    * @tparam T the target type
-   * @return a relations builder to configure child relations
+   * @return a resource builder
    */
-  def register[T](rootRelation: (String, Relation[_, T, _]))(implicit m: Manifest[T]): RelationsBuilder[T] = {
-    synchronized {
-      rootRelations = rootRelations + rootRelation
-      new RelationsBuilder(m.runtimeClass)
-    }
-  }
+  def register[T](path: String)(implicit m: Manifest[T]): AsResource[T] = new AsResource(path, m.runtimeClass)
 
-  def build(): RelationRegistry = new RelationRegistry(relationsMap)
+  def build(): RelationRegistry = new RelationRegistry(relationsMap.toMap)
 }
 
 object RegistryBuilder {

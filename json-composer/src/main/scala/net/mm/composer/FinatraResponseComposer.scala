@@ -1,13 +1,12 @@
 package net.mm.composer
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.twitter.finatra.{Controller, Request, ResponseBuilder}
+import com.twitter.finatra.{Request, ResponseBuilder}
+import com.twitter.logging.Logger
 import com.twitter.util.Future
-import net.mm.composer.properties.{PropertiesParser, RelationProperty}
+import net.mm.composer.properties.PropertiesParser
 import net.mm.composer.relations.RelationJsonComposer
 
 trait FinatraResponseComposer {
-  self: Controller =>
 
   val PropertiesParam = "properties"
 
@@ -17,27 +16,20 @@ trait FinatraResponseComposer {
 
   implicit class ComposingResponseBuilder(render: ResponseBuilder) {
 
-    private def renderComposed(properties: String, noRelations: => Any, composedRelations: RelationProperty => Future[JsonNode]): Future[ResponseBuilder] = {
-      propertiesParser(properties) match {
-        case Right(propertyTree) =>
-          composedRelations(propertyTree)
-            .map(render.json)
-            .onFailure(log.warning(_, "Relation composition failed"))
-        case Left(error) =>
-          render.badRequest.body(error).toFuture
-      }
-    }
+    def composedJson[T](obj: Any)(implicit request: Request, m: Manifest[T]): Future[ResponseBuilder] = composedJson(obj, m.runtimeClass)(request)
 
-    def composedJson[T](seq: Seq[T])(implicit request: Request, m: Manifest[T]): Future[ResponseBuilder] = {
-      request.params.get(PropertiesParam).fold(render.json(seq).toFuture)(
-        properties => renderComposed(properties, seq, relationComposer.compose(seq))
-      )
-    }
-
-    def composedJson[T](obj: T)(implicit request: Request, m: Manifest[T]): Future[ResponseBuilder] = {
-      request.params.get(PropertiesParam).fold(render.json(obj).toFuture)(
-        properties => renderComposed(properties, obj, relationComposer.compose(obj))
-      )
+    def composedJson(obj: Any, clazz: Class[_])(implicit request: Request): Future[ResponseBuilder] = {
+      request.params.get(PropertiesParam)
+        .map(propertiesParser.apply)
+        .map{
+          case Right(propertyTree) =>
+            relationComposer.compose(obj, clazz)(propertyTree)
+              .map(render.json)
+              .onFailure(Logger.get.warning(_, "Relation composition failed"))
+          case Left(error) =>
+            render.badRequest.body(error).toFuture
+        }
+        .getOrElse(render.json(obj).toFuture)
     }
   }
 

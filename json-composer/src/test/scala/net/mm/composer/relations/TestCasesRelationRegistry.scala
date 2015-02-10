@@ -8,28 +8,28 @@ trait TestCasesRelationRegistry {
   self: TestCases =>
 
   implicit val relationRegistry = RegistryBuilder()
-    .register[Category](
-      "categories" -> ToOne(categoryKey, getCategories)
-    ).having(
+    .register[Category]("categories")
+    .as(categoryKey, getCategories)
+    .having(
       "products" -> ToMany(categoryKey, getProductsByCategories, NonBijective),
       "size" -> ToOne(categoryKey, getCategorySize)
     )
-    .register[Product](
-      "products" -> ToOne(productKey, getProducts)
-    ).having(
+    .register[Product]("products")
+    .as(productKey, getProducts)
+    .having(
       "categories" -> ToOne(categoryKey, getCategories, Array),
       "reviews" -> ToMany(productKey, getReviewsByProduct)
     )
-    .register[Review](
-      "reviews" -> ToOne(reviewKey, getReviews)
-    ).having(
+    .register[Review]("reviews")
+    .as(reviewKey, getReviews)
+    .having(
       "reviewer" -> ToOne(userKey, getUsers),
       "product" -> ToOne(productKey, getProducts),
       "categories" -> ToMany(productKey, getCategoriesByProduct)
     )
-    .register[User](
-      "users" -> ToOne(userKey, getUsers)
-    ).having(
+    .register[User]("users")
+    .as(userKey, getUsers)
+    .having(
       "myreviews" -> ToMany(userKey, getReviewsByUser)
     )
     .build()

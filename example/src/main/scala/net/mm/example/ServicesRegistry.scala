@@ -7,7 +7,6 @@ import net.mm.composer.relations.execution.SerializationHint.Array
 import net.mm.composer.relations._
 import net.mm.example.services._
 
-
 trait ServicesRegistry {
   self: ComposingServer =>
 
@@ -37,28 +36,28 @@ trait ServicesRegistry {
   implicit val reviewService = new ReviewService
 
   implicit def relationRegistry: RelationRegistry = RegistryBuilder()
-    .register[Category](
-      "categories" -> ToOne(Keys.categoryKey, productService.getCategories)
-    ).having(
+    .register[Category]("categories")
+    .as(Keys.categoryKey, productService.getCategories)
+    .having(
       "products" -> ToMany(Keys.categoryKey, productService.getProductsByCategories, NonBijective),
       "size" -> ToOne(Keys.categoryKey, productService.getCategorySize)
     )
-    .register[Product](
-      "products" -> ToOne(Keys.productKey, productService.getProducts)
-    ).having(
+    .register[Product]("products")
+    .as(Keys.productKey, productService.getProducts)
+    .having(
       "categories" -> ToOne(Keys.categoryKey, productService.getCategories, Array),
       "reviews" -> ToMany(Keys.productKey, reviewService.getReviewsByProduct)
     )
-    .register[Review](
-      "reviews" -> ToOne(Keys.reviewKey, reviewService.getReviews)
-    ).having(
+    .register[Review]("reviews")
+    .as(Keys.reviewKey, reviewService.getReviews)
+    .having(
       "reviewer" -> ToOne(Keys.userKey, userService.getUsers),
       "product" -> ToOne(Keys.productKey, productService.getProducts),
       "categories" -> ToMany(Keys.productKey, productService.getCategoriesByProduct)
     )
-    .register[User](
-      "users" -> ToOne(Keys.userKey, userService.getUsers)
-    ).having(
+    .register[User]("users")
+    .as(Keys.userKey, userService.getUsers)
+    .having(
       "myreviews" -> ToMany(Keys.userKey, reviewService.getReviewsByUser)
     )
     .build()
