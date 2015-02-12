@@ -2,6 +2,7 @@ package net.mm.composer.properties
 
 import org.scalatest.FunSuite
 import org.scalatest.Matchers._
+import Modifier._
 
 class PropertiesParserSuite extends FunSuite {
 
@@ -33,12 +34,6 @@ class PropertiesParserSuite extends FunSuite {
     parser("reviews(id)") shouldBe Right(
       RelationProperty("reviews", FieldProperty("id"))
     )
-  }
-
-  test("Fail fast on unknown modifiers") {
-    intercept[Exception] {
-      new PropertiesParserImpl(Modifier[Product]("any"))
-    }.getMessage should include("scala.Product")
   }
 
   test("relation with modifiers") {

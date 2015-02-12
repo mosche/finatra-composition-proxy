@@ -1,14 +1,14 @@
 package net.mm.composer.relations.execution
 
-import net.mm.composer.properties.{PropertyTree, RelationProperty}
+import net.mm.composer.properties.{RelationProperty}
 import net.mm.composer.relations.Relation.AnyRelation
 import net.mm.composer.relations.RelationRegistry
 import net.mm.composer.relations.execution.ExecutionHint.NonBijective
 
 trait ExecutionPlanBuilder {
-  def apply[T](tree: PropertyTree)(implicit m: Manifest[T]): ExecutionPlan
+  def apply[T](property: RelationProperty)(implicit m: Manifest[T]): ExecutionPlan
 
-  def apply(tree: PropertyTree, clazz: Class[_]): ExecutionPlan
+  def apply(property: RelationProperty, clazz: Class[_]): ExecutionPlan
 }
 
 class ExecutionPlanBuilderImpl(implicit relationRegistry: RelationRegistry) extends ExecutionPlanBuilder {
@@ -20,11 +20,11 @@ class ExecutionPlanBuilderImpl(implicit relationRegistry: RelationRegistry) exte
     def prepone(task: TaskNode): Boolean = !rel.executionHints(NonBijective) && rel.key == task.relation.key
   }
 
-  def apply[T](property: PropertyTree)(implicit m: Manifest[T]) = {
+  def apply[T](property: RelationProperty)(implicit m: Manifest[T]) = {
     apply(property, m.runtimeClass)
   }
 
-  def apply(property: PropertyTree, clazz: Class[_]): ExecutionPlan = {
+  def apply(property: RelationProperty, clazz: Class[_]): ExecutionPlan = {
     val tempGraph = for {
       tree <- property.childRelations
       relation <- relationRegistry.get(clazz, tree.name)

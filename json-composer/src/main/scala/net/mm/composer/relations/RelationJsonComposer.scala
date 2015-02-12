@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.node.{ArrayNode, ObjectNode}
 import com.twitter.finatra.serialization.DefaultJacksonJsonSerializer
 import com.twitter.logging.Logger
 import com.twitter.util.{Try, Future}
-import net.mm.composer.properties.PropertyTree
+import net.mm.composer.properties.RelationProperty
 import net.mm.composer.relations.Relation.AnyRelation
 import net.mm.composer.relations.execution.SerializationHint.Array
 import net.mm.composer.relations.execution.{ExecutionPlan, ExecutionPlanBuilder, ExecutionScheduler}
@@ -14,19 +14,19 @@ import scala.collection.JavaConversions._
 import scala.collection.parallel.ParSeq
 
 trait RelationJsonComposer {
-  def compose(obj: Any, clazz: Class[_])(propertyTree: PropertyTree): Future[JsonNode]
+  def compose(obj: Any, clazz: Class[_])(propertyTree: RelationProperty): Future[JsonNode]
 }
 
 class RelationJsonComposerImpl(implicit executionScheduler: ExecutionScheduler, executionPlanBuilder: ExecutionPlanBuilder, registry: RelationRegistry) extends RelationJsonComposer {
 
   private val mapper = DefaultJacksonJsonSerializer.mapper
 
-  type ChildRelations = ParSeq[(PropertyTree, AnyRelation)]
+  type ChildRelations = ParSeq[(RelationProperty, AnyRelation)]
   type Fields = Seq[String]
 
   private implicit class LoadedRelation[From, Target, Id](relation: Relation[From, Target,Id])(implicit ds: RelationDataSource) {
 
-    def appendTargetNode(objNode: ObjectNode, obj: From, property: PropertyTree)(executer: (Fields, ChildRelations) => Target => JsonNode): Unit = {
+    def appendTargetNode(objNode: ObjectNode, obj: From, property: RelationProperty)(executer: (Fields, ChildRelations) => Target => JsonNode): Unit = {
       val target = relation.key(obj).flatMap(id => ds.get(relation)(id))
       val relations = childRelations(property,relation.target)
 
@@ -42,7 +42,7 @@ class RelationJsonComposerImpl(implicit executionScheduler: ExecutionScheduler, 
     }
   }
 
-  private def childRelations(property: PropertyTree, clazz: Class[_]) = property.childRelations.par.flatMap(rel => registry.get(clazz, rel.name).map((rel, _)))
+  private def childRelations(property: RelationProperty, clazz: Class[_]) = property.childRelations.par.flatMap(rel => registry.get(clazz, rel.name).map((rel, _)))
 
   private def toArrayNode[T, Id](fields: Fields, relations: ChildRelations)(seq: Iterable[T])(implicit dataSource: RelationDataSource): ArrayNode = {
     def composeEach = toObjectNode(fields, relations) _
@@ -63,7 +63,7 @@ class RelationJsonComposerImpl(implicit executionScheduler: ExecutionScheduler, 
     objNode
   }
 
-  def compose(obj: Any, clazz: Class[_])(propertyTree: PropertyTree): Future[JsonNode] = {
+  def compose(obj: Any, clazz: Class[_])(propertyTree: RelationProperty): Future[JsonNode] = {
     val partialComposer = executeAndCompose(propertyTree, clazz)_
     obj match {
       case seq: Seq[_] => partialComposer(executionScheduler.run(seq), implicit dataSource => toArrayNode(_,_)(seq))
@@ -72,7 +72,7 @@ class RelationJsonComposerImpl(implicit executionScheduler: ExecutionScheduler, 
   }
 
 
-  private def executeAndCompose[T](propertyTree: PropertyTree, clazz: Class[T])(executer: ExecutionPlan => Future[RelationDataSource], composer: RelationDataSource => (Fields, ChildRelations) => JsonNode): Future[JsonNode] = {
+  private def executeAndCompose[T](propertyTree: RelationProperty, clazz: Class[T])(executer: ExecutionPlan => Future[RelationDataSource], composer: RelationDataSource => (Fields, ChildRelations) => JsonNode): Future[JsonNode] = {
     val executionPlan = executionPlanBuilder(propertyTree, clazz)
     executer(executionPlan).map(ds =>
       composer(ds)(propertyTree.childNames, childRelations(propertyTree, clazz))
