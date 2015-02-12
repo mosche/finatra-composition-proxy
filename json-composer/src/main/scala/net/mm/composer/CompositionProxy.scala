@@ -3,15 +3,17 @@ package net.mm.composer
 import com.twitter.finatra.FinatraServer
 import net.mm.composer.properties.PropertiesParserImpl
 import net.mm.composer.relations.execution.{ExecutionPlanBuilderImpl, ExecutionSchedulerImpl}
-import net.mm.composer.relations.{RelationJsonComposerImpl, RelationRegistry}
+import net.mm.composer.relations.{RelationJsonComposer, RelationJsonComposerImpl, RelationRegistry}
 
-trait ComposingServer {
+trait CompositionProxy {
   self: FinatraServer =>
 
-  implicit def relationRegistry: RelationRegistry
+  implicit def relationComposerFactory(registry: RelationRegistry): RelationJsonComposer = {
+    implicit val r = registry
+    implicit val executionPlanBuilder = new ExecutionPlanBuilderImpl
+    new RelationJsonComposerImpl
+  }
 
-  implicit lazy val executionPlanBuilder = new ExecutionPlanBuilderImpl
   implicit lazy val executionScheduler = new ExecutionSchedulerImpl
   implicit lazy val propertiesParser = new PropertiesParserImpl
-  implicit lazy val relationComposer = new RelationJsonComposerImpl
 }

@@ -8,7 +8,7 @@ import org.scalatest.FunSuite
 import org.scalatest.Matchers._
 import org.scalatest.mock.MockitoSugar.mock
 
-class RelationJsonComposerSuite extends FunSuite with TestCases with TestCasesRelationRegistry {
+class RelationJsonComposerSuite extends FunSuite with TestCases with TestCasesCompositionControllerBuilder {
 
   val composer = new RelationJsonComposerImpl()(
     mock[ExecutionScheduler](MockAnswer(Future(mockDataSource))),

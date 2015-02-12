@@ -1,20 +1,21 @@
 package net.mm.composer
 
-import com.twitter.finatra.{Request, ResponseBuilder}
+import com.twitter.finatra.{Controller, Request, ResponseBuilder}
 import com.twitter.logging.Logger
 import com.twitter.util.Future
 import net.mm.composer.properties.PropertiesParser
 import net.mm.composer.relations.RelationJsonComposer
 
-trait FinatraResponseComposer {
+trait CompositionResponseBuilder {
+  self: Controller =>
 
-  val PropertiesParam = "properties"
+  private val PropertiesParam = "properties"
 
-  def propertiesParser: PropertiesParser
+  protected def propertiesParser: PropertiesParser
 
-  def relationComposer: RelationJsonComposer
+  protected def relationComposer: RelationJsonComposer
 
-  implicit class ComposingResponseBuilder(render: ResponseBuilder) {
+  implicit class CompositionSupport(render: ResponseBuilder) {
 
     def composedJson[T](obj: Any)(implicit request: Request, m: Manifest[T]): Future[ResponseBuilder] = composedJson(obj, m.runtimeClass)(request)
 

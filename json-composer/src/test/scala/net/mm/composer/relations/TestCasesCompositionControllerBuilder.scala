@@ -1,13 +1,14 @@
 package net.mm.composer.relations
 
+import net.mm.composer.CompositionControllerBuilder
 import net.mm.composer.relations.TestCases.Keys._
 import net.mm.composer.relations.execution.ExecutionHint.NonBijective
 import net.mm.composer.relations.execution.SerializationHint.Array
 
-trait TestCasesRelationRegistry {
+trait TestCasesCompositionControllerBuilder {
   self: TestCases =>
 
-  implicit val relationRegistry = RegistryBuilder()
+  val compositionControllerBuilder = CompositionControllerBuilder()
     .register[Category]("categories")
     .as(categoryKey, getCategories)
     .having(
@@ -32,5 +33,6 @@ trait TestCasesRelationRegistry {
     .having(
       "myreviews" -> ToMany(userKey, getReviewsByUser)
     )
-    .build()
+
+  implicit val relationRegistry = compositionControllerBuilder.buildRegistry()
 }
