@@ -9,9 +9,13 @@ package object execution {
   case class TaskNode(val name: String, val relation: AnyRelation, val subTasks: TaskNode*) {
     val costs: Int = 1 + subTasks.map(_.costs).sum
 
-    private[TaskNode] val executorSet: Set[AnyExecutor] = subTasks.flatMap(_.executorSet).toSet + relation.apply
+    // collected sources of this node
+    private[TaskNode] val sources: Set[RelationSource[_, _]] = subTasks.flatMap(_.sources).toSet + relation.source
 
-    def dependsOn(other: TaskNode): Boolean = (executorSet & other.executorSet).isEmpty == false
+    /**
+     * @return TRUE if sources of both nodes overlap
+     */
+    def dependsOn(other: TaskNode): Boolean = (sources & other.sources).isEmpty == false
   }
 
   implicit class RichExecutionPlan(plan: Iterable[TaskNode]) {

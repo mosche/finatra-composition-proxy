@@ -48,20 +48,20 @@ trait TestCases {
 
   val allProducts = products.values.toSeq
   val allProductIds = products.values.map(_.id).toSet
-  val getProducts: Executor[Int, Product] = products.filterKeys(_).asFuture
-  val getProductsByCategories: Executor[String, Seq[Product]] = _.map(cat => (cat, allProducts.filter(_.categoryIds.contains(cat)))).filterNot(_._2.isEmpty).toMap.asFuture
+  val getProducts: RelationSource[Int, Product] = products.filterKeys(_).asFuture
+  val getProductsByCategories: RelationSource[String, Seq[Product]] = _.map(cat => (cat, allProducts.filter(_.categoryIds.contains(cat)))).filterNot(_._2.isEmpty).toMap.asFuture
 
-  val getReviews: Executor[Int, Review] = reviews.filterKeys(_).asFuture
-  val getReviewsByProduct: Executor[Int, Seq[Review]] = reviews.values.toSeq.groupBy(_.productId).filterKeys(_).asFuture
-  val getReviewsByUser: Executor[String, Seq[Review]] = reviews.values.toSeq.groupBy(_.reviewerId).filterKeys(_).asFuture
+  val getReviews: RelationSource[Int, Review] = reviews.filterKeys(_).asFuture
+  val getReviewsByProduct: RelationSource[Int, Seq[Review]] = reviews.values.toSeq.groupBy(_.productId).filterKeys(_).asFuture
+  val getReviewsByUser: RelationSource[String, Seq[Review]] = reviews.values.toSeq.groupBy(_.reviewerId).filterKeys(_).asFuture
 
   val allCategories = allProducts.flatMap(_.categoryIds).toSet
-  val getCategories: Executor[String, Category] = _.map(c => (c, Category(c))).toMap.asFuture
-  val getCategoriesByProduct: Executor[Int, Seq[Category]] = products.filterKeys(_).mapValues(p => p.categoryIds.map(Category)).asFuture
-  val getCategorySize: Executor[String, Int] = getProductsByCategories(_).map(_.mapValues(_.size))
+  val getCategories: RelationSource[String, Category] = _.map(c => (c, Category(c))).toMap.asFuture
+  val getCategoriesByProduct: RelationSource[Int, Seq[Category]] = products.filterKeys(_).mapValues(p => p.categoryIds.map(Category)).asFuture
+  val getCategorySize: RelationSource[String, Int] = getProductsByCategories(_).map(_.mapValues(_.size))
 
   val allUsers = reviews.values.map(_.reviewerId).toSet
-  val getUsers: Executor[String, User] = _.map(u => (u, User(u))).toMap.asFuture
+  val getUsers: RelationSource[String, User] = _.map(u => (u, User(u))).toMap.asFuture
 
   val mockDataSource = RelationDataSource(
     getProductsByCategories -> getProductsByCategories(allCategories).await,

@@ -24,7 +24,7 @@ trait ExecutionScheduler {
 
 
 class ExecutionSchedulerImpl extends ExecutionScheduler {
-  type Executors = mutable.Map[Relation.Executor[_, _], BatchExecutor[_, _]]
+  type Executors = mutable.Map[Relation.RelationSource[_, _], BatchSourceExecutor[_, _]]
 
   private val logger = Logger.get
 
@@ -39,10 +39,10 @@ class ExecutionSchedulerImpl extends ExecutionScheduler {
     }
   }
 
-  private def getExecutor[Id, T](executor: Relation.Executor[Id, T])(implicit executors: Executors): BatchExecutor[Id, T] = executors.synchronized {
+  private def getExecutor[Id, T](executor: Relation.RelationSource[Id, T])(implicit executors: Executors): BatchSourceExecutor[Id, T] = executors.synchronized {
     executors
-      .asInstanceOf[mutable.Map[Relation.Executor[Id, T], BatchExecutor[Id, T]]]
-      .getOrElseUpdate(executor, new BatchExecutor(executor))
+      .asInstanceOf[mutable.Map[Relation.RelationSource[Id, T], BatchSourceExecutor[Id, T]]]
+      .getOrElseUpdate(executor, new BatchSourceExecutor(executor))
   }
 
   /**
@@ -80,7 +80,7 @@ class ExecutionSchedulerImpl extends ExecutionScheduler {
       case rel: ToMany[From, _, Id] => seq.flatMap(rel.key(_)).toSet
     }
 
-    getExecutor(relation.apply).asInstanceOf[BatchExecutor[Id, _]].addIds(ids)
+    getExecutor(relation.source).asInstanceOf[BatchSourceExecutor[Id, _]].addIds(ids)
     ids
   }
 
@@ -91,12 +91,12 @@ class ExecutionSchedulerImpl extends ExecutionScheduler {
     // resolve and descend depth first to load child nodes
     val res = task.relation match {
       case rel: ToOne[_, T, Id] => for {
-        result <- getExecutor(rel.apply).execute(ids)
+        result <- getExecutor(rel.source).execute(ids)
         _ <- schedule(task.subTasks, result.values.toSeq)
       } yield ()
 
       case rel: ToMany[_, T, Id] => for {
-        result <- getExecutor(rel.apply).execute(ids)
+        result <- getExecutor(rel.source).execute(ids)
         _ <- schedule(task.subTasks, result.values.flatten.toSeq)
       } yield ()
     }

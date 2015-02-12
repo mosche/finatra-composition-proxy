@@ -18,17 +18,17 @@ class CompositionControllerBuilder{
 
   class AsResource[T] private[CompositionControllerBuilder](path: String, target: Class[_]){
 
-    def as[K: ParamConverter](key: RelationKey[_, K], resolver: Executor[K, T]): HavingRelations[K] = {
-      resources += s"$path/:id" -> new ResourceById(resolver, target)
-      new HavingRelations(key)
+    def as[K: ParamConverter](relationKey: RelationKey[_, K], relationSource: RelationSource[K, T]): HavingRelations[K] = {
+      resources += s"$path/:id" -> new ResourceById(relationSource, target)
+      new HavingRelations(relationKey)
     }
 
-    class HavingRelations[K: ParamConverter](key: RelationKey[_, K]){
+    class HavingRelations[K: ParamConverter](relationKey: RelationKey[_, K]){
 
       def having(relations: (String, RelationFor[T])*): CompositionControllerBuilder = {
-        relations.filter(_._2.key == key).foreach{
+        relations.filter(_._2.key == relationKey).foreach{
           case (segment, relation: RelationWithKey[K]) =>
-            resources += s"$path/:id/$segment" -> new ResourceById(relation.apply, relation.target)
+            resources += s"$path/:id/$segment" -> new ResourceById(relation.source, relation.target)
         }
 
         relationsMap += target -> relations.toMap

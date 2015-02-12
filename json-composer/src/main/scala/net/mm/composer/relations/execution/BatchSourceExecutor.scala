@@ -3,14 +3,14 @@ package net.mm.composer.relations.execution
 import com.twitter.finagle.util.DefaultTimer
 import com.twitter.logging.Logger
 import com.twitter.util.{Duration, Future, Return, Throw, Time}
-import net.mm.composer.relations.Relation.Executor
+import net.mm.composer.relations.Relation.RelationSource
 
 import scala.collection.mutable
 
-class BatchExecutor[Id, Target] private[execution](apply: Executor[Id, Target]) {
+class BatchSourceExecutor[Id, Target] private[execution](source: RelationSource[Id, Target]) {
   val log = Logger.get
 
-  private val timeout = Duration.fromSeconds(2)
+  private val timeout = Duration.fromMilliseconds(500)
 
   private[this] var result = Future(mutable.Map.empty[Id, Target])
   private[this] val idsDone = mutable.Set.empty[Id]
@@ -18,13 +18,13 @@ class BatchExecutor[Id, Target] private[execution](apply: Executor[Id, Target]) 
 
   private def timedApply(ids: Set[Id]) = {
     val timer = Time.now
-    apply(ids)
+    source(ids)
       .within(DefaultTimer.twitter, timeout)
-      .respond(_ => log.ifDebug(s"Executor@${apply.hashCode} done in ${timer.untilNow}, Ids: ${ids.mkString(",")}"))
+      .respond(_ => log.ifDebug(s"BatchSource@${source.hashCode} execution done in ${timer.untilNow}, Ids: ${ids.mkString(",")}"))
   }
 
   def addIds(ids: Set[Id]): Unit = synchronized {
-    log.ifTrace(s"Executor@${apply.hashCode}: adding ids ${ids.mkString(",")}")
+    log.ifTrace(s"BatchSource@${source.hashCode}: adding ids ${ids.mkString(",")}")
     idsPlanned ++= (ids -- idsDone)
   }
 
@@ -33,7 +33,7 @@ class BatchExecutor[Id, Target] private[execution](apply: Executor[Id, Target]) 
     idsPlanned.clear()
     idsDone ++= ids
 
-    assert(returnIds.forall(idsDone), "requested execution on Ids that were never registered")
+    assert(returnIds.forall(idsDone), "requested execution on ids that were never registered")
 
     if (!ids.isEmpty) {
       result = Future.join(result, timedApply(ids)).map(p => p._1 ++= p._2)
@@ -45,6 +45,6 @@ class BatchExecutor[Id, Target] private[execution](apply: Executor[Id, Target]) 
   def getResult(): collection.Map[Id, Target] = result.poll match {
     case Some(Return(value)) => value
     case Some(Throw(exception)) => throw exception
-    case None => throw new Exception("Attempt to access result before execution is done!")
+    case None => throw new Exception("Attempt to access result before source execution is done!")
   }
 }

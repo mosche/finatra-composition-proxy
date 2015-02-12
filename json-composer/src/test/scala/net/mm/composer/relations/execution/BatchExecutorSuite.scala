@@ -13,7 +13,7 @@ class BatchExecutorSuite extends FunSuite {
   }
 
   val executor = spy(new Fixture)
-  val batchExecutor = new BatchExecutor(executor)
+  val batchExecutor = new BatchSourceExecutor(executor)
 
   test("ids must be registered before execution") {
     intercept[AssertionError](
