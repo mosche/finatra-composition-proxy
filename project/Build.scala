@@ -6,6 +6,7 @@ object Build extends Build{
 
   lazy val standardSettings = coreDefaultSettings ++ Seq(
     scalaVersion := "2.10.4",
+    resolvers += "Twitter" at "http://maven.twttr.com",
     libraryDependencies ++= Seq(
       "com.twitter" %% "finatra" % "1.6.0",
       "org.scalatest" % "scalatest_2.10" % "2.2.3" % "test",
