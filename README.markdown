@@ -105,7 +105,7 @@ There's actually no remote services used in this example. However, some fake ser
 
 ```sbt example/run```
 
-#### Example 1: Load a product with id and title only<br>
+##### Example 1: Load a product with id and title only<br>
 
 ```
 curl http://localhost:7070/shop/products/1?properties=product(id,title)
@@ -118,7 +118,7 @@ curl http://localhost:7070/shop/products/1?properties=product(id,title)
 }
 ```
 
-#### Example 2: Load a product with all its categories, reviews and the reviewer<br>
+##### Example 2: Load a product with all its categories, reviews and the reviewer<br>
  
 ```
 curl http://localhost:7070/shop/products/1?properties=product(id,title,reviews(stars,review,reviewer(username)),categories(id))
