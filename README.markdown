@@ -72,7 +72,7 @@ Instead, based on a configuration, an entire REST API with some nifty features i
 ```
 
 *Fields* as well as *relations* (by means of a RPC call) are returned on demand in order to address the specific information need as well as limitations of an API client.
-That will say service composition is exposed to the client by means of a concise query DSL (the *properties* DSL). Leveraging the query DSL code complexity is significantly reduced both on client as well as the server side.
+That will say service composition is exposed to the client by means of a concise query DSL ([the *properties* DSL](#the-properties-dsl)). Leveraging the query DSL code complexity is significantly reduced both on client as well as the server side.
 
 Every *properties* query is translated into an optimized *execution plan* in order to enhance performance as much as possible.
 Optimizations taken into account are:
