@@ -31,10 +31,7 @@
     <!-- MAIN CONTENT -->
     <div id="main_content_wrap" class="outer">
       <section id="main_content" class="inner">
-        <h1>
-<a id="finatra-composition-proxy" class="anchor" href="#finatra-composition-proxy" aria-hidden="true"><span class="octicon octicon-link"></span></a>Finatra composition proxy</h1>
-
-<p><a href="http://finatra.info/"><em>Finatra</em></a> is a <em>Scala</em> web framework inspired by <em>Sinatra</em> and build on top of <em>Twitter-Server</em>.
+        <p><a href="http://finatra.info/"><em>Finatra</em></a> is a <em>Scala</em> web framework inspired by <em>Sinatra</em> and build on top of <em>Twitter-Server</em>.
 As such it provides rich metrics, templating and integrates well with <a href="https://twitter.github.io/finagle/"><em>Finagle</em></a>, Twitter's protocol-agnostic async RPC system.
 <a href="http://monkey.org/%7Emarius/funsrv.pdf"><em>Your Server as a Function</em></a>, a great paper by Marius Eriksen, describes the philosophy behind <em>Finagle</em> and how <em>Futures</em>, <em>Services</em> and <em>Filters</em> play so well together.</p>
 
@@ -50,7 +47,7 @@ But dealing with various devices, particularly talking about mobile, there certa
 <p>Not long ago Clifton Cunningham presented <a href="https://github.com/tes/compoxure"><em>Compoxure</em></a> in <a href="https://medium.com/@clifcunn/nodeconf-eu-29dd3ed500ec">his blog</a> to tackle the UI / website composition challenge:</p>
 
 <p>Already some while ago Twitter presented <a href="https://www.youtube.com/watch?v=VVpmMfT8aYw"><em>Stitch</em></a>, a library for composing <em>Finagle</em> services.
-<em>Stitch</em> provides a concise Scala query API which permits readable expression of application logic hiding the complexity of bulk RPC calls.
+<em>Stitch</em> provides a concise Scala query API which facilitates a readable expression of application logic hiding the complexity of bulk RPC calls.
 That way <em>Stitch</em> efficiently allows Twitter to build Services on top of other Services. But, unfortunately, <em>Stitch</em> is not open-sourced yet.</p>
 
 <p><a href="http://getclump.io/"><em>Clump</em></a>, which is deeply inspired by <em>Stitch</em>, was just recently open-sourced by developers from SoundCloud.
@@ -113,7 +110,7 @@ That will say service composition is exposed to the client by means of a concise
 Optimizations taken into account are:</p>
 
 <ul>
-<li>reordering of <em>relations</em> in order maximize parallelism</li>
+<li>rearrangement of <em>relations</em> in order to maximize parallelism</li>
 <li>bulk requests (if possible even accross multiple composition levels)</li>
 <li>a caching layer</li>
 </ul>
@@ -152,11 +149,17 @@ Optimizations taken into account are:</p>
 <p>Queries:</p>
 
 <ul>
-<li>Load a product with id and title only<br>
-<code>curl http://localhost:7070/shop/products/1?properties=product(id,title)</code>
+<li>
+<p>Load a product with id and title only<br></p>
+
+<pre><code>curl http://localhost:7070/shop/products/1?properties=product(id,title)
+</code></pre>
 </li>
-<li>Load a product with all its categories, reviews and the reviewer<br>
-<code>curl http://localhost:7070/shop/products/1?properties=product(id,title,reviews(stars,review,reviewer(username)),categories(id))</code>
+<li>
+<p>Load a product with all its categories, reviews and the reviewer<br></p>
+
+<pre><code>curl http://localhost:7070/shop/products/1?properties=product(id,title,reviews(stars,review,reviewer(username)),categories(id))
+</code></pre>
 </li>
 </ul>
       </section>
