@@ -109,49 +109,55 @@ Queries:
 
 - Load a product with id and title only<br>
 
+ ```
+ curl http://localhost:7070/shop/products/1?properties=product(id,title)
+ ```
+
  ```javascript
- // curl http://localhost:7070/shop/products/1?properties=product(id,title)
  {
-   "id": 1,
-   "title": "Apple iBook"
+   id: 1,
+   title: "Apple iBook"
  }
  ```
 
 - Load a product with all its categories, reviews and the reviewer<br>
+ 
+ ```
+ curl http://localhost:7070/shop/products/1?properties=product(id,title,reviews(stars,review,reviewer(username)),categories(id))
+ ```
 
  ```javascript
- // curl http://localhost:7070/shop/products/1?properties=product(id,title,reviews(stars,review,reviewer(username)),categories(id))
  {
-   "id": 1,
-   "title": "Apple iBook",
-   "categories": [
+   id: 1,
+   title: "Apple iBook",
+   categories: [
      {
-       "id": "computer"
+       id: "computer"
      },
      {
-       "id": "laptop"
+       id: "laptop"
      }
    ],
-   "reviews": [
+   reviews: [
      {
-       "stars": 4,
-       "review": "looks nice",
-       "reviewer": {
-         "username": "steff"
+       stars: 4,
+       review: "looks nice",
+       reviewer: {
+         username: "steff"
        }
      },
      {
-       "stars": 3,
-       "review": "expensive",
-       "reviewer": {
-         "username": "mark"
+       stars: 3,
+       review: "expensive",
+       reviewer: {
+         username: "mark"
        }
      },
      {
-       "stars": 5,
-       "review": "awesome, always again",
-       "reviewer": {
-         "username": "chris"
+       stars: 5,
+       review: "awesome, always again",
+       reviewer: {
+         username: "chris"
        }
      }
    ]
