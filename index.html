@@ -62,46 +62,45 @@ Following a configuration based approach defining <em>what</em> can be fetched, 
 Instead, based on a configuration, an entire REST API with some nifty features is automatically generated.</p>
 
 <h4>
-<a id="example-building-a-controller-from-a-configuration" class="anchor" href="#example-building-a-controller-from-a-configuration" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example: Building a controller from a configuration</h4>
+<a id="example-controller-by-configuration" class="anchor" href="#example-controller-by-configuration" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example: Controller by configuration</h4>
 
-<pre><code>  // A shop controller registering the following composition resources:
-  //
-  // GET /shop/categories/:id
-  // GET /shop/categories/:id/products
-  // GET /shop/categories/:id/size
-  // GET /shop/products/:id
-  // GET /shop/products/:id/reviews
-  // GET /shop/reviews/:id
-  // GET /shop/users/:id
-  // GET /shop/users/:id/myreviews
+<div class="highlight highlight-scala"><pre>  <span class="pl-c">// A shop controller registering the following composition resources:</span>
+  <span class="pl-c">//</span>
+  <span class="pl-c">// GET /shop/categories/:id</span>
+  <span class="pl-c">// GET /shop/categories/:id/products</span>
+  <span class="pl-c">// GET /shop/categories/:id/size</span>
+  <span class="pl-c">// GET /shop/products/:id</span>
+  <span class="pl-c">// GET /shop/products/:id/reviews</span>
+  <span class="pl-c">// GET /shop/reviews/:id</span>
+  <span class="pl-c">// GET /shop/users/:id</span>
+  <span class="pl-c">// GET /shop/users/:id/myreviews</span>
 
-  lazy val shopController: Controller = CompositionControllerBuilder()
-    .register[Category]("categories")
+  <span class="pl-s">lazy</span> <span class="pl-k">val</span> <span class="pl-en">shopController</span><span class="pl-k">:</span> <span class="pl-en">Controller</span> <span class="pl-k">=</span> <span class="pl-en">CompositionControllerBuilder</span>()
+    .register[<span class="pl-en">Category</span>](<span class="pl-s1"><span class="pl-pds">"</span>categories<span class="pl-pds">"</span></span>)
     .as(categoryKey, productService.getCategories)
     .having(
-      "products" -&gt; ToMany(categoryKey, productService.getProductsByCategories),
-      "size" -&gt; ToOne(categoryKey, productService.getCategorySize)
+      <span class="pl-s1"><span class="pl-pds">"</span>products<span class="pl-pds">"</span></span> <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-en">ToMany</span>(categoryKey, productService.getProductsByCategories),
+      <span class="pl-s1"><span class="pl-pds">"</span>size<span class="pl-pds">"</span></span> <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-en">ToOne</span>(categoryKey, productService.getCategorySize)
     )
-    .register[Product]("products")
+    .register[<span class="pl-en">Product</span>](<span class="pl-s1"><span class="pl-pds">"</span>products<span class="pl-pds">"</span></span>)
     .as(productKey, productService.getProducts)
     .having(
-      "categories" -&gt; ToOne(categoryKey, productService.getCategories, Array),
-      "reviews" -&gt; ToMany(productKey, reviewService.getReviewsByProduct)
+      <span class="pl-s1"><span class="pl-pds">"</span>categories<span class="pl-pds">"</span></span> <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-en">ToOne</span>(categoryKey, productService.getCategories, <span class="pl-en">Array</span>),
+      <span class="pl-s1"><span class="pl-pds">"</span>reviews<span class="pl-pds">"</span></span> <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-en">ToMany</span>(productKey, reviewService.getReviewsByProduct)
     )
-    .register[Review]("reviews")
+    .register[<span class="pl-en">Review</span>](<span class="pl-s1"><span class="pl-pds">"</span>reviews<span class="pl-pds">"</span></span>)
     .as(reviewKey, reviewService.getReviews)
     .having(
-      "reviewer" -&gt; ToOne(userKey, userService.getUsers),
-      "product" -&gt; ToOne(productKey, productService.getProducts),
-      "categories" -&gt; ToMany(productKey, productService.getCategoriesByProduct)
+      <span class="pl-s1"><span class="pl-pds">"</span>reviewer<span class="pl-pds">"</span></span> <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-en">ToOne</span>(userKey, userService.getUsers),
+      <span class="pl-s1"><span class="pl-pds">"</span>product<span class="pl-pds">"</span></span> <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-en">ToOne</span>(productKey, productService.getProducts),
+      <span class="pl-s1"><span class="pl-pds">"</span>categories<span class="pl-pds">"</span></span> <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-en">ToMany</span>(productKey, productService.getCategoriesByProduct)
     )
-    .register[User]("users")
+    .register[<span class="pl-en">User</span>](<span class="pl-s1"><span class="pl-pds">"</span>users<span class="pl-pds">"</span></span>)
     .as(userKey, userService.getUsers)
     .having(
-      "myreviews" -&gt; ToMany(userKey, reviewService.getReviewsByUser)
+      <span class="pl-s1"><span class="pl-pds">"</span>myreviews<span class="pl-pds">"</span></span> <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-en">ToMany</span>(userKey, reviewService.getReviewsByUser)
     )
-    .buildController("/shop")
-</code></pre>
+    .buildController(<span class="pl-s1"><span class="pl-pds">"</span>/shop<span class="pl-pds">"</span></span>)</pre></div>
 
 <p><em>Fields</em> as well as <em>relations</em> (by means of a RPC call) are returned on demand in order to address the specific information need as well as limitations of an API client.
 That will say service composition is exposed to the client by means of a concise query DSL (<a href="#the-properties-dsl">the <em>properties</em> DSL</a>). Leveraging the query DSL code complexity is significantly reduced both on client as well as the server side.</p>
@@ -146,22 +145,60 @@ Optimizations taken into account are:</p>
 
 <p><code>sbt example/run</code></p>
 
-<p>Queries:</p>
-
-<ul>
-<li>
-<p>Load a product with id and title only<br></p>
+<h5>
+<a id="example-1-load-a-product-with-id-and-title-only" class="anchor" href="#example-1-load-a-product-with-id-and-title-only" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example 1: Load a product with id and title only<br>
+</h5>
 
 <pre><code>curl http://localhost:7070/shop/products/1?properties=product(id,title)
 </code></pre>
-</li>
-<li>
-<p>Load a product with all its categories, reviews and the reviewer<br></p>
+
+<div class="highlight highlight-javascript"><pre>{
+ id<span class="pl-k">:</span> <span class="pl-c1">1</span>,
+ title<span class="pl-k">:</span> <span class="pl-s1"><span class="pl-pds">"</span>Apple iBook<span class="pl-pds">"</span></span>
+}</pre></div>
+
+<h5>
+<a id="example-2-load-a-product-with-all-its-categories-reviews-and-the-reviewer" class="anchor" href="#example-2-load-a-product-with-all-its-categories-reviews-and-the-reviewer" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example 2: Load a product with all its categories, reviews and the reviewer<br>
+</h5>
 
 <pre><code>curl http://localhost:7070/shop/products/1?properties=product(id,title,reviews(stars,review,reviewer(username)),categories(id))
 </code></pre>
-</li>
-</ul>
+
+<div class="highlight highlight-javascript"><pre>{
+ id<span class="pl-k">:</span> <span class="pl-c1">1</span>,
+ title<span class="pl-k">:</span> <span class="pl-s1"><span class="pl-pds">"</span>Apple iBook<span class="pl-pds">"</span></span>,
+ categories<span class="pl-k">:</span> [
+   {
+     id<span class="pl-k">:</span> <span class="pl-s1"><span class="pl-pds">"</span>computer<span class="pl-pds">"</span></span>
+   },
+   {
+     id<span class="pl-k">:</span> <span class="pl-s1"><span class="pl-pds">"</span>laptop<span class="pl-pds">"</span></span>
+   }
+ ],
+ reviews<span class="pl-k">:</span> [
+   {
+     stars<span class="pl-k">:</span> <span class="pl-c1">4</span>,
+     review<span class="pl-k">:</span> <span class="pl-s1"><span class="pl-pds">"</span>looks nice<span class="pl-pds">"</span></span>,
+     reviewer<span class="pl-k">:</span> {
+       username<span class="pl-k">:</span> <span class="pl-s1"><span class="pl-pds">"</span>steff<span class="pl-pds">"</span></span>
+     }
+   },
+   {
+     stars<span class="pl-k">:</span> <span class="pl-c1">3</span>,
+     review<span class="pl-k">:</span> <span class="pl-s1"><span class="pl-pds">"</span>expensive<span class="pl-pds">"</span></span>,
+     reviewer<span class="pl-k">:</span> {
+       username<span class="pl-k">:</span> <span class="pl-s1"><span class="pl-pds">"</span>mark<span class="pl-pds">"</span></span>
+     }
+   },
+   {
+     stars<span class="pl-k">:</span> <span class="pl-c1">5</span>,
+     review<span class="pl-k">:</span> <span class="pl-s1"><span class="pl-pds">"</span>awesome, always again<span class="pl-pds">"</span></span>,
+     reviewer<span class="pl-k">:</span> {
+       username<span class="pl-k">:</span> <span class="pl-s1"><span class="pl-pds">"</span>chris<span class="pl-pds">"</span></span>
+     }
+   }
+ ]
+}</pre></div>
       </section>
     </div>
 
