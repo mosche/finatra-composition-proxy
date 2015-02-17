@@ -29,9 +29,9 @@ The composition proxy attempts to take the declarative approach of *Stitch* and 
 Following a configuration based approach defining *what* can be fetched, the *how* is totally left open.
 Instead, based on a configuration, an entire REST API with some nifty features is automatically generated.
 
-#### Example: Building a controller from a configuration
+#### Example: Controller by configuration
 
-```
+```scala
   // A shop controller registering the following composition resources:
   //
   // GET /shop/categories/:id
