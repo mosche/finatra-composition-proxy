@@ -39,7 +39,7 @@ object FinatraApp extends FinatraServer
     .having(
       "myreviews" -> ToMany(userKey, reviewService.getReviewsByUser)
     )
-    .buildCoontroller("/shop")
+    .buildController("/shop")
 
   register(shopController)
 }

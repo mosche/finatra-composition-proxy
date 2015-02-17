@@ -14,11 +14,11 @@ object Build extends Build{
     )
   )
 
-  lazy val `json-composer` = project
+  lazy val `composition-proxy` = project
     .settings(standardSettings:_*)
 
   lazy val example = project
     .settings(standardSettings:_*)
     .settings(mainClass := Some("net.mm.example.FinatraApp"))
-    .dependsOn(`json-composer`)
+    .dependsOn(`composition-proxy`)
 }

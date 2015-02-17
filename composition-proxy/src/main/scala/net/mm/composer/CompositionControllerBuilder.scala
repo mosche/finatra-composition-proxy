@@ -53,7 +53,7 @@ class CompositionControllerBuilder{
    * @param pathPrefix global path prefix for this controller (default: empty)
    * @return the controller
    */
-  def buildCoontroller(pathPrefix: String = "")
+  def buildController(pathPrefix: String = "")
      (implicit propertiesParser: PropertiesParser,
       executionScheduler: ExecutionScheduler,
       relationComposerFactory: RelationRegistry => RelationJsonComposer): Controller = {
