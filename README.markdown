@@ -114,10 +114,10 @@ Queries:
  ```
 
  ```javascript
- {
-   id: 1,
-   title: "Apple iBook"
- }
+{
+ id: 1,
+ title: "Apple iBook"
+}
  ```
 
 - Load a product with all its categories, reviews and the reviewer<br>
@@ -127,39 +127,39 @@ Queries:
  ```
 
  ```javascript
- {
-   id: 1,
-   title: "Apple iBook",
-   categories: [
-     {
-       id: "computer"
-     },
-     {
-       id: "laptop"
+{
+ id: 1,
+ title: "Apple iBook",
+ categories: [
+   {
+     id: "computer"
+   },
+   {
+     id: "laptop"
+   }
+ ],
+ reviews: [
+   {
+     stars: 4,
+     review: "looks nice",
+     reviewer: {
+       username: "steff"
      }
-   ],
-   reviews: [
-     {
-       stars: 4,
-       review: "looks nice",
-       reviewer: {
-         username: "steff"
-       }
-     },
-     {
-       stars: 3,
-       review: "expensive",
-       reviewer: {
-         username: "mark"
-       }
-     },
-     {
-       stars: 5,
-       review: "awesome, always again",
-       reviewer: {
-         username: "chris"
-       }
+   },
+   {
+     stars: 3,
+     review: "expensive",
+     reviewer: {
+       username: "mark"
      }
-   ]
- }
+   },
+   {
+     stars: 5,
+     review: "awesome, always again",
+     reviewer: {
+       username: "chris"
+     }
+   }
+ ]
+}
  ```
