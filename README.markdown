@@ -113,12 +113,12 @@ Queries:
  curl http://localhost:7070/shop/products/1?properties=product(id,title)
  ```
 
- ```javascript
+```javascript
 {
  id: 1,
  title: "Apple iBook"
 }
- ```
+```
 
 - Load a product with all its categories, reviews and the reviewer<br>
  
@@ -126,7 +126,7 @@ Queries:
  curl http://localhost:7070/shop/products/1?properties=product(id,title,reviews(stars,review,reviewer(username)),categories(id))
  ```
 
- ```javascript
+```javascript
 {
  id: 1,
  title: "Apple iBook",
@@ -162,4 +162,4 @@ Queries:
    }
  ]
 }
- ```
+```
