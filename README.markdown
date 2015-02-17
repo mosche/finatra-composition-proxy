@@ -15,7 +15,7 @@ But dealing with various devices, particularly talking about mobile, there certa
 Not long ago Clifton Cunningham presented [*Compoxure*](https://github.com/tes/compoxure) in [his blog](https://medium.com/@clifcunn/nodeconf-eu-29dd3ed500ec) to tackle the UI / website composition challenge:
 
 Already some while ago Twitter presented [*Stitch*](https://www.youtube.com/watch?v=VVpmMfT8aYw), a library for composing *Finagle* services.
-*Stitch* provides a concise Scala query API which permits readable expression of application logic hiding the complexity of bulk RPC calls.
+*Stitch* provides a concise Scala query API which facilitates a readable expression of application logic hiding the complexity of bulk RPC calls.
 That way *Stitch* efficiently allows Twitter to build Services on top of other Services. But, unfortunately, *Stitch* is not open-sourced yet.
 
 [*Clump*](http://getclump.io/), which is deeply inspired by *Stitch*, was just recently open-sourced by developers from SoundCloud.
@@ -77,7 +77,7 @@ That will say service composition is exposed to the client by means of a concise
 Every *properties* query is translated into an optimized *execution plan* in order to enhance performance as much as possible.
 Optimizations taken into account are:
 
-- reordering of *relations* in order maximize parallelism
+- rearrangement of *relations* in order to maximize parallelism
 - bulk requests (if possible even accross multiple composition levels)
 - a caching layer
 
@@ -108,6 +108,11 @@ There's actually no remote services used in this example. However, some fake ser
 Queries:
 
 - Load a product with id and title only<br>
- ```curl http://localhost:7070/shop/products/1?properties=product(id,title)```
+ ```
+ curl http://localhost:7070/shop/products/1?properties=product(id,title)
+ ```
+
 - Load a product with all its categories, reviews and the reviewer<br>
- ```curl http://localhost:7070/shop/products/1?properties=product(id,title,reviews(stars,review,reviewer(username)),categories(id))```
+ ```
+ curl http://localhost:7070/shop/products/1?properties=product(id,title,reviews(stars,review,reviewer(username)),categories(id))
+ ```
