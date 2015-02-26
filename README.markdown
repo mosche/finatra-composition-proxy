@@ -50,7 +50,7 @@ Instead, based on a configuration, an entire REST API with some nifty features i
     .register[Category]("categories")
     .as(categoryKey, productService.getCategories)
     .having(
-      "products" -> ToMany(categoryKey, productService.getProductsByCategories),
+      "products" -> ToMany(categoryKey, productService.getProductsByCategories, NonBijective),
       "size" -> ToOne(categoryKey, productService.getCategorySize)
     )
     .register[Product]("products")
@@ -84,7 +84,7 @@ Instead, based on a configuration, an entire REST API with some nifty features i
 *Fields* as well as *relations* (by means of a RPC call) are returned on demand in order to address the specific information need as well as limitations of an API client.
 That will say service composition is exposed to the client by means of a concise query DSL ([the *properties* DSL](#the-properties-dsl)). Leveraging the query DSL code complexity is significantly reduced both on client as well as the server side.
 
-Every *properties* query is translated into an optimized *execution plan* in order to enhance performance as much as possible.
+Every *properties* query is translated into an optimized [*execution plan*](#the-execution-plan) in order to enhance performance as much as possible.
 Optimizations taken into account are:
 
 - rearrangement of *relations* in order to maximize parallelism
@@ -95,7 +95,7 @@ While this approach is more powerful in it's specific usage case, it obviously i
 
 ### The properties DSL
 
-Inspired by Facebook's [*field expansion (Graph API)*](https://developers.facebook.com/docs/graph-api/using-graph-api/#fieldexpansion), *fields* and *relations* are requested on demand.
+Similar to Facebook's [*field expansion (Graph API)*](https://developers.facebook.com/docs/graph-api/using-graph-api/#fieldexpansion), *fields* and *relations* are requested on demand.
 
 Properties are queried according to the following grammar:
 
@@ -103,7 +103,25 @@ Properties are queried according to the following grammar:
 - Field => *AlphaNumericIdentifier*
 - Relation => *Field* . ( **(** *Property*, **)** __*__ *Property* )
 
-where Relation is appended to the request as follows: ...?properties= *Relation*
+A *Relation* is then appended to the request as a query parameter *properties*.
+
+### The execution plan
+
+The *properties* query is first parsed into a properties tree. This tree is then transformed into an optimized version, the *execution plan*.
+
+When building the execution plan, two rather simple optimizations are taken into account:
+
+1. Whenever nested relations in the tree are using the same key function as their parent relation,
+   such relations are moved upwards in the graph to increase parallelism during execution.
+   Therefore relations must be invariant on the key. That will say applying the key function on the relation result(s) will produce the same key again.
+   If this is not the case for a particular relation it must be marked with the execution hint *NonBijective*.
+
+2. Once subtrees are sorted according to their depth, execution can later be split into two phases:
+   From the flattest to the deepest subtree all available keys are collected first.
+   Afterwards, depth first from the deepest to the flattest subtree (again respecting the two phases for following subtrees),
+   a batch source executor will load the data for all collected keys.
+   As relations trees tend to be highly unbalanced this simple execution strategy works really well.
+
 
 ## Example
 
