@@ -37,11 +37,14 @@ Instead, based on a configuration, an entire REST API with some nifty features i
   // GET /shop/categories/:id
   // GET /shop/categories/:id/products
   // GET /shop/categories/:id/size
+  // GET /shop/comment/:id
   // GET /shop/products/:id
   // GET /shop/products/:id/reviews
   // GET /shop/reviews/:id
+  // GET /shop/reviews/:id/comments
   // GET /shop/users/:id
-  // GET /shop/users/:id/myreviews
+  // GET /shop/users/:id/comments
+  // GET /shop/users/:id/reviews
 
   lazy val shopController: Controller = CompositionControllerBuilder()
     .register[Category]("categories")
@@ -61,12 +64,19 @@ Instead, based on a configuration, an entire REST API with some nifty features i
     .having(
       "reviewer" -> ToOne(userKey, userService.getUsers),
       "product" -> ToOne(productKey, productService.getProducts),
-      "categories" -> ToMany(productKey, productService.getCategoriesByProduct)
+      "categories" -> ToMany(productKey, productService.getCategoriesByProduct),
+      "comments" -> ToMany(reviewKey, commentService.getCommentsByReview)
+    )
+    .register[Comment]("comment")
+    .as(commentKey, commentService.getComments)
+    .having(
+      "user" -> ToOne(userKey, userService.getUsers)
     )
     .register[User]("users")
     .as(userKey, userService.getUsers)
     .having(
-      "myreviews" -> ToMany(userKey, reviewService.getReviewsByUser)
+      "reviews" -> ToMany(userKey, reviewService.getReviewsByUser),
+      "comments" -> ToMany(userKey, commentService.getCommentsByUser)
     )
     .buildController("/shop")
 ```
