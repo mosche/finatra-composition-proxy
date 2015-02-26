@@ -8,4 +8,8 @@ trait FakeService {
     def asFuture: Future[T] = Future(o)
   }
 
+  implicit class RichMap[K,V](m: Map[K,V]) {
+    def groupValuesBy[K](f: V => K): Map[K, Seq[V]] = m.values.toSeq.groupBy(f)
+  }
+
 }

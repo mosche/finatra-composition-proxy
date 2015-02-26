@@ -15,6 +15,7 @@ trait ServicesRegistry {
   val userKey = RelationKey.lift {
     case u: User => u.username
     case r: Review => r.reviewerId
+    case c: Comment => c.userId
   }
 
   val categoryKey = RelationKey {
@@ -24,9 +25,15 @@ trait ServicesRegistry {
 
   val reviewKey = RelationKey.lift {
     case r: Review => r.id
+    case c: Comment => c.reviewId
   }
 
-  implicit val userService = new UserService
-  implicit val productService = new ProductService
-  implicit val reviewService = new ReviewService
+  val commentKey = RelationKey.lift {
+    case c: Comment => c.id
+  }
+
+  val userService = new UserService
+  val productService = new ProductService
+  val reviewService = new ReviewService
+  val commentService = new CommentService
 }

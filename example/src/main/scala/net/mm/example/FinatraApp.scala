@@ -5,7 +5,7 @@ import net.mm.composer.relations.execution.SerializationHint.Array
 import net.mm.composer.relations.{ToOne, ToMany}
 import net.mm.composer.relations.execution.ExecutionHint.NonBijective
 import net.mm.composer.{CompositionControllerBuilder, CompositionProxy}
-import net.mm.example.services.{User, Review, Product, Category}
+import net.mm.example.services._
 
 object FinatraApp extends FinatraServer
   with CompositionProxy
@@ -32,12 +32,19 @@ object FinatraApp extends FinatraServer
     .having(
       "reviewer" -> ToOne(userKey, userService.getUsers),
       "product" -> ToOne(productKey, productService.getProducts),
-      "categories" -> ToMany(productKey, productService.getCategoriesByProduct)
+      "categories" -> ToMany(productKey, productService.getCategoriesByProduct),
+      "comments" -> ToMany(reviewKey, commentService.getCommentsByReview)
+    )
+    .register[Comment]("comment")
+    .as(commentKey, commentService.getComments)
+    .having(
+      "user" -> ToOne(userKey, userService.getUsers)
     )
     .register[User]("users")
     .as(userKey, userService.getUsers)
     .having(
-      "myreviews" -> ToMany(userKey, reviewService.getReviewsByUser)
+      "reviews" -> ToMany(userKey, reviewService.getReviewsByUser),
+      "comments" -> ToMany(userKey, commentService.getCommentsByUser)
     )
     .buildController("/shop")
 
