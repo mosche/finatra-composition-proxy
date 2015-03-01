@@ -12,7 +12,7 @@ trait ExecutionScheduler {
    * Run the execution plan on the given input sequence.
    * @return a relation data source containing all results
    */
-  def run(seq: Seq[Any])(tasks: ExecutionPlan): Future[RelationDataSource]
+  def run(seq: Iterable[Any])(tasks: ExecutionPlan): Future[RelationDataSource]
 
   /**
    * Run the execution plan on the given entity.
@@ -29,7 +29,7 @@ class ExecutionSchedulerImpl extends ExecutionScheduler {
 
   def run(entity: Any)(tasks: ExecutionPlan): Future[RelationDataSource] = run(Seq(entity))(tasks)
 
-  def run(seq: Seq[Any])(tasks: ExecutionPlan): Future[RelationDataSource] = {
+  def run(seq: Iterable[Any])(tasks: ExecutionPlan): Future[RelationDataSource] = {
     val time = Time.now
     val executors: Executors = mutable.Map.empty
     schedule(tasks, seq)(executors) map { _ =>
@@ -47,7 +47,7 @@ class ExecutionSchedulerImpl extends ExecutionScheduler {
   /**
    * Schedule execution according to the given execution plan depth first in reverse order.
    */
-  private def schedule[From, Id](tasks: ExecutionPlan, seq: Seq[From])(implicit executors: Executors): Future[Any] = {
+  private def schedule[From, Id](tasks: ExecutionPlan, seq: Iterable[From])(implicit executors: Executors): Future[Any] = {
     logger.ifTrace(s"Scheduling tasks ${tasks.names} for ${seq.headOption.map(_.getClass.getSimpleName).getOrElse("Nothing")}")
 
     // register ids first to allow aggregation of requests
@@ -73,7 +73,7 @@ class ExecutionSchedulerImpl extends ExecutionScheduler {
     Future.join(forkedExecution.map(_._2))
   }
 
-  private def registerIds[From, Id](relation: Relation[From, _, Id], seq: Seq[From])(implicit executors: Executors): Set[Id] = {
+  private def registerIds[From, Id](relation: Relation[From, _, Id], seq: Iterable[From])(implicit executors: Executors): Set[Id] = {
     val ids: Set[Id] = seq.flatMap(relation.idExtractor).toSet
     getExecutor(relation.source).addIds(ids)
     ids
