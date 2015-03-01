@@ -3,11 +3,11 @@ package net.mm.composer.relations.execution
 import com.twitter.finagle.util.DefaultTimer
 import com.twitter.logging.Logger
 import com.twitter.util.{Duration, Future, Return, Throw, Time}
-import net.mm.composer.relations.Relation.RelationSource
+import net.mm.composer.relations.Relation.Source
 
 import scala.collection.mutable
 
-class BatchSourceExecutor[Id, Target] private[execution](source: RelationSource[Id, Target]) {
+class BatchSourceExecutor[Id, Target] private[execution](source: Source[Id, Target]) {
   val log = Logger.get
 
   private val timeout = Duration.fromMilliseconds(500)

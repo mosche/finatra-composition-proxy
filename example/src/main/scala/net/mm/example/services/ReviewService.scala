@@ -9,9 +9,9 @@ class ReviewService extends FakeService {
     Review(6, 5, "steff", 1, "bad quality"), Review(7, 5, "mark", 2, "works, but seen much better")
   ).map(r => (r.id, r)).toMap
 
-  val getReviews: RelationSource[Int, Review] = reviews.filterKeys(_).asFuture
-  val getReviewsByProduct: RelationSource[Int, Seq[Review]] = reviews.groupValuesBy(_.productId).filterKeys(_).asFuture
-  val getReviewsByUser: RelationSource[String, Seq[Review]] = reviews.groupValuesBy(_.reviewerId).filterKeys(_).asFuture
+  val getReviews: Source[Int, Review] = reviews.filterKeys(_).asFuture
+  val getReviewsByProduct: Source[Int, Seq[Review]] = reviews.groupValuesBy(_.productId).filterKeys(_).asFuture
+  val getReviewsByUser: Source[String, Seq[Review]] = reviews.groupValuesBy(_.reviewerId).filterKeys(_).asFuture
 }
 
 case class Review(id: Int, productId: Int, reviewerId: String, stars: Int, review: String)

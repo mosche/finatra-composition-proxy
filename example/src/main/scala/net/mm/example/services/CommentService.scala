@@ -2,7 +2,7 @@ package net.mm.example.services
 
 import javax.management.relation.RelationService
 
-import net.mm.composer.relations.Relation.RelationSource
+import net.mm.composer.relations.Relation.Source
 
 class CommentService extends FakeService {
 
@@ -13,9 +13,9 @@ class CommentService extends FakeService {
     Comment(4, 4, "mark", "absolutely not expensive for what you get")
   ).map(c => (c.id, c)).toMap
 
-  val getComments: RelationSource[Int, Comment] = comments.filterKeys(_).asFuture
-  val getCommentsByReview: RelationSource[Int, Seq[Comment]] = comments.groupValuesBy(_.reviewId).filterKeys(_).asFuture
-  val getCommentsByUser: RelationSource[String, Seq[Comment]] = comments.groupValuesBy(_.userId).filterKeys(_).asFuture
+  val getComments: Source[Int, Comment] = comments.filterKeys(_).asFuture
+  val getCommentsByReview: Source[Int, Seq[Comment]] = comments.groupValuesBy(_.reviewId).filterKeys(_).asFuture
+  val getCommentsByUser: Source[String, Seq[Comment]] = comments.groupValuesBy(_.userId).filterKeys(_).asFuture
 }
 
 case class Comment(id: Int, reviewId: Int, userId: String, comment: String)

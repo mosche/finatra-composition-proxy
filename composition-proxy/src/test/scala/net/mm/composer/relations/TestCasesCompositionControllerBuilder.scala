@@ -1,38 +1,37 @@
 package net.mm.composer.relations
 
 import net.mm.composer.CompositionControllerBuilder
-import net.mm.composer.relations.TestCases.Keys._
 import net.mm.composer.relations.execution.ExecutionHint.NonBijective
 import net.mm.composer.relations.execution.SerializationHint.Array
 
 trait TestCasesCompositionControllerBuilder {
   self: TestCases =>
 
-  val compositionControllerBuilder = CompositionControllerBuilder()
+  lazy val compositionControllerBuilder = CompositionControllerBuilder()
     .register[Category]("categories")
-    .as(categoryKey, getCategories)
+    .as(categoryIdExtractor, getCategories)
     .having(
-      "products" -> ToMany(categoryKey, getProductsByCategories, NonBijective),
-      "size" -> ToOne(categoryKey, getCategorySize)
+      "products" -> ToMany(categoryIdExtractor, getProductsByCategories, NonBijective),
+      "size" -> ToOne(categoryIdExtractor, getCategorySize)
     )
     .register[Product]("products")
-    .as(productKey, getProducts)
+    .as(productIdExtractor, getProducts)
     .having(
-      "categories" -> ToOne(categoryKey, getCategories, Array),
-      "reviews" -> ToMany(productKey, getReviewsByProduct)
+      "categories" -> ToOne(categoryIdExtractor, getCategories, Array),
+      "reviews" -> ToMany(productIdExtractor, getReviewsByProduct)
     )
     .register[Review]("reviews")
-    .as(reviewKey, getReviews)
+    .as(reviewIdExtractor, getReviews)
     .having(
-      "reviewer" -> ToOne(userKey, getUsers),
-      "product" -> ToOne(productKey, getProducts),
-      "categories" -> ToMany(productKey, getCategoriesByProduct)
+      "reviewer" -> ToOne(userIdExtractor, getUsers),
+      "product" -> ToOne(productIdExtractor, getProducts),
+      "categories" -> ToMany(productIdExtractor, getCategoriesByProduct)
     )
     .register[User]("users")
-    .as(userKey, getUsers)
+    .as(userIdExtractor, getUsers)
     .having(
-      "myreviews" -> ToMany(userKey, getReviewsByUser)
+      "myreviews" -> ToMany(userIdExtractor, getReviewsByUser)
     )
 
-  implicit val relationRegistry = compositionControllerBuilder.buildRegistry()
+  implicit lazy val relationRegistry = compositionControllerBuilder.buildRegistry()
 }

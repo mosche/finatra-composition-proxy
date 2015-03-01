@@ -48,35 +48,35 @@ Instead, based on a configuration, an entire REST API with some nifty features i
 
   lazy val shopController: Controller = CompositionControllerBuilder()
     .register[Category]("categories")
-    .as(categoryKey, productService.getCategories)
+    .as(categoryIdExtractor, productService.getCategories)
     .having(
-      "products" -> ToMany(categoryKey, productService.getProductsByCategories, NonBijective),
-      "size" -> ToOne(categoryKey, productService.getCategorySize)
+      "products" -> ToMany(categoryIdExtractor, productService.getProductsByCategories, NonBijective),
+      "size" -> ToOne(categoryIdExtractor, productService.getCategorySize)
     )
     .register[Product]("products")
-    .as(productKey, productService.getProducts)
+    .as(productIdExtractor, productService.getProducts)
     .having(
-      "categories" -> ToOne(categoryKey, productService.getCategories, Array),
-      "reviews" -> ToMany(productKey, reviewService.getReviewsByProduct)
+      "categories" -> ToOne(categoryIdExtractor, productService.getCategories, Array),
+      "reviews" -> ToMany(productIdExtractor, reviewService.getReviewsByProduct)
     )
     .register[Review]("reviews")
-    .as(reviewKey, reviewService.getReviews)
+    .as(reviewIdExtractor, reviewService.getReviews)
     .having(
-      "reviewer" -> ToOne(userKey, userService.getUsers),
-      "product" -> ToOne(productKey, productService.getProducts),
-      "categories" -> ToMany(productKey, productService.getCategoriesByProduct),
-      "comments" -> ToMany(reviewKey, commentService.getCommentsByReview)
+      "reviewer" -> ToOne(userIdExtractor, userService.getUsers),
+      "product" -> ToOne(productIdExtractor, productService.getProducts),
+      "categories" -> ToMany(productIdExtractor, productService.getCategoriesByProduct),
+      "comments" -> ToMany(reviewIdExtractor, commentService.getCommentsByReview)
     )
     .register[Comment]("comment")
-    .as(commentKey, commentService.getComments)
+    .as(commentIdExtractor, commentService.getComments)
     .having(
-      "user" -> ToOne(userKey, userService.getUsers)
+      "user" -> ToOne(userIdExtractor, userService.getUsers)
     )
     .register[User]("users")
-    .as(userKey, userService.getUsers)
+    .as(userIdExtractor, userService.getUsers)
     .having(
-      "reviews" -> ToMany(userKey, reviewService.getReviewsByUser),
-      "comments" -> ToMany(userKey, commentService.getCommentsByUser)
+      "reviews" -> ToMany(userIdExtractor, reviewService.getReviewsByUser),
+      "comments" -> ToMany(userIdExtractor, commentService.getCommentsByUser)
     )
     .buildController("/shop")
 ```
@@ -111,15 +111,15 @@ The *properties* query is first parsed into a properties tree. This tree is then
 
 When building the execution plan, two rather simple optimizations are taken into account:
 
-1. Whenever nested relations in the tree are using the same key function as their parent relation,
+1. Whenever nested relations in the tree are using the same Id extractor  as their parent relation,
    such relations are moved upwards in the graph to increase parallelism during execution.
-   Therefore relations must be invariant on the key. That will say applying the key function on the relation result(s) will produce the same key again.
+   Therefore relations must be invariant on the id. That will say applying the Id extractor on the relation result(s) will produce the same Id again.
    If this is not the case for a particular relation it must be marked with the execution hint *NonBijective*.
 
 2. Once subtrees are sorted according to their depth, execution can later be split into two phases:
-   From the flattest to the deepest subtree all available keys are collected first.
+   From the flattest to the deepest subtree all available Ids are collected first.
    Afterwards, depth first from the deepest to the flattest subtree (again respecting the two phases for following subtrees),
-   a batch source executor will load the data for all collected keys.
+   a batch source executor will load the data for all collected Ids.
    As relations trees tend to be highly unbalanced this simple execution strategy works really well.
 
 

@@ -27,7 +27,7 @@ class RelationJsonComposerImpl(implicit executionScheduler: ExecutionScheduler, 
   private implicit class LoadedRelation[From, Target, Id](relation: Relation[From, Target,Id])(implicit ds: RelationDataSource) {
 
     def appendTargetNode(objNode: ObjectNode, obj: From, property: RelationProperty)(executer: (Fields, ChildRelations) => Target => JsonNode): Unit = {
-      val target = relation.key(obj).flatMap(id => ds.get(relation)(id))
+      val target = relation.idExtractor(obj).flatMap(id => ds.get(relation)(id))
       val relations = childRelations(property,relation.target)
 
       if(relation.serializationHints(Array)){

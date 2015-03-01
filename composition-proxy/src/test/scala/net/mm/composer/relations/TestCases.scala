@@ -13,25 +13,23 @@ case class User(username: String)
 
 trait TestCases {
 
-  object Keys {
-    val productKey = RelationKey.lift {
-      case r: Review => r.productId
-      case p: Product => p.id
-    }
+  val productIdExtractor = IdExtractor.lift {
+    case r: Review => r.productId
+    case p: Product => p.id
+  }
 
-    val userKey = RelationKey.lift {
-      case u: User => u.username
-      case r: Review => r.reviewerId
-    }
+  val userIdExtractor = IdExtractor.lift {
+    case u: User => u.username
+    case r: Review => r.reviewerId
+  }
 
-    val categoryKey = RelationKey {
-      case p: Product => p.categoryIds
-      case c: Category => Some(c.id)
-    }
+  val categoryIdExtractor = IdExtractor {
+    case p: Product => p.categoryIds
+    case c: Category => Some(c.id)
+  }
 
-    val reviewKey = RelationKey.lift {
-      case r: Review => r.id
-    }
+  val reviewIdExtractor = IdExtractor.lift {
+    case r: Review => r.id
   }
 
   private val products = Seq(
@@ -48,20 +46,20 @@ trait TestCases {
 
   val allProducts = products.values.toSeq
   val allProductIds = products.values.map(_.id).toSet
-  val getProducts: RelationSource[Int, Product] = products.filterKeys(_).asFuture
-  val getProductsByCategories: RelationSource[String, Seq[Product]] = _.map(cat => (cat, allProducts.filter(_.categoryIds.contains(cat)))).filterNot(_._2.isEmpty).toMap.asFuture
+  val getProducts: Source[Int, Product] = products.filterKeys(_).asFuture
+  val getProductsByCategories: Source[String, Seq[Product]] = _.map(cat => (cat, allProducts.filter(_.categoryIds.contains(cat)))).filterNot(_._2.isEmpty).toMap.asFuture
 
-  val getReviews: RelationSource[Int, Review] = reviews.filterKeys(_).asFuture
-  val getReviewsByProduct: RelationSource[Int, Seq[Review]] = reviews.values.toSeq.groupBy(_.productId).filterKeys(_).asFuture
-  val getReviewsByUser: RelationSource[String, Seq[Review]] = reviews.values.toSeq.groupBy(_.reviewerId).filterKeys(_).asFuture
+  val getReviews: Source[Int, Review] = reviews.filterKeys(_).asFuture
+  val getReviewsByProduct: Source[Int, Seq[Review]] = reviews.values.toSeq.groupBy(_.productId).filterKeys(_).asFuture
+  val getReviewsByUser: Source[String, Seq[Review]] = reviews.values.toSeq.groupBy(_.reviewerId).filterKeys(_).asFuture
 
   val allCategories = allProducts.flatMap(_.categoryIds).toSet
-  val getCategories: RelationSource[String, Category] = _.map(c => (c, Category(c))).toMap.asFuture
-  val getCategoriesByProduct: RelationSource[Int, Seq[Category]] = products.filterKeys(_).mapValues(p => p.categoryIds.map(Category)).asFuture
-  val getCategorySize: RelationSource[String, Int] = getProductsByCategories(_).map(_.mapValues(_.size))
+  val getCategories: Source[String, Category] = _.map(c => (c, Category(c))).toMap.asFuture
+  val getCategoriesByProduct: Source[Int, Seq[Category]] = products.filterKeys(_).mapValues(p => p.categoryIds.map(Category)).asFuture
+  val getCategorySize: Source[String, Int] = getProductsByCategories(_).map(_.mapValues(_.size))
 
   val allUsers = reviews.values.map(_.reviewerId).toSet
-  val getUsers: RelationSource[String, User] = _.map(u => (u, User(u))).toMap.asFuture
+  val getUsers: Source[String, User] = _.map(u => (u, User(u))).toMap.asFuture
 
   val mockDataSource = RelationDataSource(
     getProductsByCategories -> getProductsByCategories(allCategories).await,
@@ -74,5 +72,3 @@ trait TestCases {
     getReviewsByUser -> getReviewsByUser(allUsers).await
   )
 }
-
-object TestCases extends TestCases

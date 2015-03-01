@@ -13,7 +13,7 @@ sealed trait CompositionResource{
   def apply(render: ResponseBuilder)(implicit f: AsComposingBuilder): Callback
 }
 
-class ResourceById[K: ParamConverter](relationSource: RelationSource[K, _], clazz: Class[_]) extends CompositionResource {
+class ResourceById[K: ParamConverter](relationSource: Source[K, _], clazz: Class[_]) extends CompositionResource {
   override def apply(render: ResponseBuilder)(implicit f: AsComposingBuilder): Callback = implicit request => {
     request.getRouteParam("id").fold(render.badRequest.toFuture) { id =>
       println(request)
@@ -25,7 +25,7 @@ class ResourceById[K: ParamConverter](relationSource: RelationSource[K, _], claz
   }
 }
 
-class ResourceByIds[K: ParamConverter](relationSource: RelationSource[K, _], clazz: Class[_]) extends CompositionResource {
+class ResourceByIds[K: ParamConverter](relationSource: Source[K, _], clazz: Class[_]) extends CompositionResource {
   def apply(render: ResponseBuilder)(implicit f: AsComposingBuilder): Callback  = implicit request => {
     ???
     /*request.getRequestParam[Set[K]]("ids") match {

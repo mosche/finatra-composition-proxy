@@ -2,7 +2,6 @@ package net.mm.composer.relations.execution
 
 import com.twitter.logging.Logger
 import com.twitter.util._
-import net.mm.composer.relations.Relation.AnyRelation
 import net.mm.composer.relations.{Relation, RelationDataSource, ToMany, ToOne}
 
 import scala.collection.mutable
@@ -24,7 +23,7 @@ trait ExecutionScheduler {
 
 
 class ExecutionSchedulerImpl extends ExecutionScheduler {
-  type Executors = mutable.Map[Relation.RelationSource[_, _], BatchSourceExecutor[_, _]]
+  type Executors = mutable.Map[Relation.Source[_, _], BatchSourceExecutor[_, _]]
 
   private val logger = Logger.get
 
@@ -39,20 +38,20 @@ class ExecutionSchedulerImpl extends ExecutionScheduler {
     }
   }
 
-  private def getExecutor[Id, T](executor: Relation.RelationSource[Id, T])(implicit executors: Executors): BatchSourceExecutor[Id, T] = executors.synchronized {
+  private def getExecutor[Id, T](executor: Relation.Source[Id, T])(implicit executors: Executors): BatchSourceExecutor[Id, T] = executors.synchronized {
     executors
-      .asInstanceOf[mutable.Map[Relation.RelationSource[Id, T], BatchSourceExecutor[Id, T]]]
+      .asInstanceOf[mutable.Map[Relation.Source[Id, T], BatchSourceExecutor[Id, T]]]
       .getOrElseUpdate(executor, new BatchSourceExecutor(executor))
   }
 
   /**
    * Schedule execution according to the given execution plan depth first in reverse order.
    */
-  private def schedule[From](tasks: ExecutionPlan, seq: Seq[From])(implicit executors: Executors): Future[Any] = {
+  private def schedule[From, Id](tasks: ExecutionPlan, seq: Seq[From])(implicit executors: Executors): Future[Any] = {
     logger.ifTrace(s"Scheduling tasks ${tasks.names} for ${seq.headOption.map(_.getClass.getSimpleName).getOrElse("Nothing")}")
 
     // register ids first to allow aggregation of requests
-    val idsPerTask = tasks.map(task => (task, registerIds(task.relation, seq))).toMap
+    val idsPerTask = tasks.map(task => (task, registerIds(task.relation.asInstanceOf[Relation[From, _, Id]], seq))).toMap
 
     // execute in reverse order (from right) and fork independent executions
     val forkedExecution = tasks.foldRight[Seq[(Set[TaskNode], Future[_])]](Seq.empty) {
@@ -74,13 +73,9 @@ class ExecutionSchedulerImpl extends ExecutionScheduler {
     Future.join(forkedExecution.map(_._2))
   }
 
-  private def registerIds[From, Id](relation: AnyRelation, seq: Seq[From])(implicit executors: Executors): Set[Id] = {
-    val ids: Set[Id] = relation match {
-      case rel: ToOne[From, _, Id] => seq.flatMap(rel.key(_)).toSet
-      case rel: ToMany[From, _, Id] => seq.flatMap(rel.key(_)).toSet
-    }
-
-    getExecutor(relation.source).asInstanceOf[BatchSourceExecutor[Id, _]].addIds(ids)
+  private def registerIds[From, Id](relation: Relation[From, _, Id], seq: Seq[From])(implicit executors: Executors): Set[Id] = {
+    val ids: Set[Id] = seq.flatMap(relation.idExtractor).toSet
+    getExecutor(relation.source).addIds(ids)
     ids
   }
 

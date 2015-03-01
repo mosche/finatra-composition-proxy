@@ -5,7 +5,7 @@ import net.mm.composer.properties.PropertiesParser
 import net.mm.composer.relations.Relation._
 import net.mm.composer.relations.RelationRegistry._
 import net.mm.composer.relations.execution.ExecutionScheduler
-import net.mm.composer.relations.{RelationJsonComposer, RelationRegistry}
+import net.mm.composer.relations.{Relation, RelationJsonComposer, RelationRegistry}
 import net.mm.composer.utils.ParamConverter
 
 import scala.collection.mutable.HashMap
@@ -18,16 +18,16 @@ class CompositionControllerBuilder{
 
   class AsResource[T] private[CompositionControllerBuilder](path: String, target: Class[_]){
 
-    def as[K: ParamConverter](relationKey: RelationKey[_, K], relationSource: RelationSource[K, T]): HavingRelations[K] = {
+    def as[Id: ParamConverter](idExtractor: IdExtractor[_, Id], relationSource: Source[Id, T]): HavingRelations[Id] = {
       resources += s"$path/:id" -> new ResourceById(relationSource, target)
-      new HavingRelations(relationKey)
+      new HavingRelations(idExtractor)
     }
 
-    class HavingRelations[K: ParamConverter](relationKey: RelationKey[_, K]){
+    class HavingRelations[Id: ParamConverter](idExtractor: IdExtractor[_, Id]){
 
-      def having(relations: (String, RelationFor[T])*): CompositionControllerBuilder = {
-        relations.filter(_._2.key == relationKey).foreach{
-          case (segment, relation: RelationWithKey[K]) =>
+      def having(relations: (String, Relation[T, _ , _])*): CompositionControllerBuilder = {
+        relations.filter(_._2.idExtractor == idExtractor).foreach{
+          case (segment, relation: Relation[T, _, Id]) =>
             resources += s"$path/:id/$segment" -> new ResourceById(relation.source, relation.target)
         }
 

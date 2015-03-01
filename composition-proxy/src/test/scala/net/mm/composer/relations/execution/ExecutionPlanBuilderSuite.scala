@@ -5,11 +5,9 @@ import net.mm.composer.relations._
 import org.scalatest.FunSuite
 import org.scalatest.Matchers._
 
-class ExecutionPlanBuilderSuite extends FunSuite with TestCasesCompositionControllerBuilder with TestCases {
+class ExecutionPlanBuilderSuite extends FunSuite with TestCasesCompositionControllerBuilder with TestCases{
 
   val executionPlan = new ExecutionPlanBuilderImpl
-
-  //product(categories(products(categories())))
 
   test("no relation") {
     val propertyTree = RelationProperty("product")
@@ -21,7 +19,7 @@ class ExecutionPlanBuilderSuite extends FunSuite with TestCasesCompositionContro
     executionPlan[Product](propertyTree) shouldBe Seq(TaskNode("reviews", relationRegistry.get(classOf[Product], "reviews").get))
   }
 
-  test("optimized execution plan on key") {
+  test("optimized execution plan on Id extractor") {
     val propertyTree = RelationProperty("product", RelationProperty("reviews", RelationProperty("categories")))
     val plan = executionPlan[Product](propertyTree)
 
@@ -31,7 +29,7 @@ class ExecutionPlanBuilderSuite extends FunSuite with TestCasesCompositionContro
     )
   }
 
-  test("optimized execution plan on key with cost based sorting") {
+  test("optimized execution plan on Id extractor with cost based sorting") {
     val propertyTree = RelationProperty("product", RelationProperty("reviews", RelationProperty("categories", RelationProperty("size"))))
     val plan = executionPlan[Product](propertyTree)
 

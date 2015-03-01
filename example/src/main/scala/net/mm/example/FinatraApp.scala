@@ -16,35 +16,35 @@ object FinatraApp extends FinatraServer
 
   lazy val shopController: Controller = CompositionControllerBuilder()
     .register[Category]("categories")
-    .as(categoryKey, productService.getCategories)
+    .as(categoryIdExtractor, productService.getCategories)
     .having(
-      "products" -> ToMany(categoryKey, productService.getProductsByCategories, NonBijective),
-      "size" -> ToOne(categoryKey, productService.getCategorySize)
+      "products" -> ToMany(categoryIdExtractor, productService.getProductsByCategories, NonBijective),
+      "size" -> ToOne(categoryIdExtractor, productService.getCategorySize)
     )
     .register[Product]("products")
-    .as(productKey, productService.getProducts)
+    .as(productIdExtractor, productService.getProducts)
     .having(
-      "categories" -> ToOne(categoryKey, productService.getCategories, Array),
-      "reviews" -> ToMany(productKey, reviewService.getReviewsByProduct)
+      "categories" -> ToOne(categoryIdExtractor, productService.getCategories, Array),
+      "reviews" -> ToMany(productIdExtractor, reviewService.getReviewsByProduct)
     )
     .register[Review]("reviews")
-    .as(reviewKey, reviewService.getReviews)
+    .as(reviewIdExtractor, reviewService.getReviews)
     .having(
-      "reviewer" -> ToOne(userKey, userService.getUsers),
-      "product" -> ToOne(productKey, productService.getProducts),
-      "categories" -> ToMany(productKey, productService.getCategoriesByProduct),
-      "comments" -> ToMany(reviewKey, commentService.getCommentsByReview)
+      "reviewer" -> ToOne(userIdExtractor, userService.getUsers),
+      "product" -> ToOne(productIdExtractor, productService.getProducts),
+      "categories" -> ToMany(productIdExtractor, productService.getCategoriesByProduct),
+      "comments" -> ToMany(reviewIdExtractor, commentService.getCommentsByReview)
     )
     .register[Comment]("comment")
-    .as(commentKey, commentService.getComments)
+    .as(commentIdExtractor, commentService.getComments)
     .having(
-      "user" -> ToOne(userKey, userService.getUsers)
+      "user" -> ToOne(userIdExtractor, userService.getUsers)
     )
     .register[User]("users")
-    .as(userKey, userService.getUsers)
+    .as(userIdExtractor, userService.getUsers)
     .having(
-      "reviews" -> ToMany(userKey, reviewService.getReviewsByUser),
-      "comments" -> ToMany(userKey, commentService.getCommentsByUser)
+      "reviews" -> ToMany(userIdExtractor, reviewService.getReviewsByUser),
+      "comments" -> ToMany(userIdExtractor, commentService.getCommentsByUser)
     )
     .buildController("/shop")
 

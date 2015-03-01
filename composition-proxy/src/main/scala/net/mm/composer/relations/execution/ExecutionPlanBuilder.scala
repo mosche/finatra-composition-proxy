@@ -17,7 +17,7 @@ class ExecutionPlanBuilderImpl(implicit relationRegistry: RelationRegistry) exte
     /**
      * @return true if a task can be preponed for execution with it's parent
      */
-    def prepone(task: TaskNode): Boolean = !rel.executionHints(NonBijective) && rel.key == task.relation.key
+    def prepone(task: TaskNode): Boolean = !rel.executionHints(NonBijective) && rel.idExtractor == task.relation.idExtractor
   }
 
   def apply[T](property: RelationProperty)(implicit m: Manifest[T]) = {

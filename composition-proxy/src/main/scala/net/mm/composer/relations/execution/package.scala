@@ -10,7 +10,7 @@ package object execution {
     val costs: Int = 1 + subTasks.map(_.costs).sum
 
     // collected sources of this node
-    private[TaskNode] val sources: Set[RelationSource[_, _]] = subTasks.flatMap(_.sources).toSet + relation.source
+    private[TaskNode] val sources: Set[Source[_, _]] = subTasks.flatMap(_.sources).toSet + relation.source
 
     /**
      * @return TRUE if sources of both nodes overlap

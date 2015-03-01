@@ -4,9 +4,9 @@ import com.twitter.util.Future
 import net.mm.composer.relations.Relation._
 import net.mm.composer.relations.execution.{ExecutionHint, Hint, SerializationHint}
 
-sealed abstract class Relation[-From, Target, Key](val target: Class[_]) {
-  def key: RelationKey[From, Key]
-  def source: RelationSource[Key, Target]
+sealed abstract class Relation[-From, Target, Id](val target: Class[_]) {
+  def idExtractor: IdExtractor[From, Id]
+  def source: Source[Id, Target]
   def hints: Seq[Hint]
   val executionHints = hints.filter(_.isInstanceOf[ExecutionHint]).toSet
   val serializationHints = hints.filter(_.isInstanceOf[SerializationHint]).toSet
@@ -14,23 +14,21 @@ sealed abstract class Relation[-From, Target, Key](val target: Class[_]) {
 
 object Relation {
   type AnyRelation = Relation[_, _, _]
-  type RelationFor[F] = Relation[F,_,_]
-  type RelationWithKey[K] = Relation[_,_,K]
 
-  type RelationSource[Key, Target] = Set[Key] => Future[Map[Key, Target]]
+  type Source[Id, Target] = Set[Id] => Future[Map[Id, Target]]
 
-  type RelationKey[From, Key] = From => Iterable[Key]
+  type IdExtractor[From, Id] = From => Iterable[Id]
 
-  object RelationKey {
-    def lift[Key](f: PartialFunction[Any, Key]): RelationKey[Any, Key] = from => f.lift(from)
-    def apply[Key](f: PartialFunction[Any, Iterable[Key]]): RelationKey[Any, Key] = {
+  object IdExtractor {
+    def lift[Id](f: PartialFunction[Any, Id]): IdExtractor[Any, Id] = from => f.lift(from)
+    def apply[Id](f: PartialFunction[Any, Iterable[Id]]): IdExtractor[Any, Id] = {
       from => if(f.isDefinedAt(from)) f(from) else Iterable.empty
     }
   }
 }
 
-case class ToOne[-From, Target, Key](key: RelationKey[From, Key], source: RelationSource[Key, Target], hints: Hint*)(implicit m: Manifest[Target])
-  extends Relation[From, Target, Key](m.runtimeClass)
+case class ToOne[-From, Target, Id](idExtractor: IdExtractor[From, Id], source: Source[Id, Target], hints: Hint*)(implicit m: Manifest[Target])
+  extends Relation[From, Target, Id](m.runtimeClass)
 
-case class ToMany[-From, Target, Key](key: RelationKey[From, Key], source: RelationSource[Key, Seq[Target]], hints: Hint*)(implicit m: Manifest[Target])
-  extends Relation[From, Seq[Target], Key](m.runtimeClass)
+case class ToMany[-From, Target, Id](idExtractor: IdExtractor[From, Id], source: Source[Id, Seq[Target]], hints: Hint*)(implicit m: Manifest[Target])
+  extends Relation[From, Seq[Target], Id](m.runtimeClass)

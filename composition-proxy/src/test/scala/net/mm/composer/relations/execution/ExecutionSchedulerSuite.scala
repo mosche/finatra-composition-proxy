@@ -17,7 +17,7 @@ class ExecutionSchedulerSuite extends FunSuite with TestCases {
   }
 
   test("users with myreviews (ToMany)") {
-    val plan = Seq(TaskNode("myreviews", ToMany(Keys.userKey, getReviewsByUser)))
+    val plan = Seq(TaskNode("myreviews", ToMany(userIdExtractor, getReviewsByUser)))
 
     val result = scheduler.run(users)(plan).await
     val expected = RelationDataSource(
@@ -28,7 +28,7 @@ class ExecutionSchedulerSuite extends FunSuite with TestCases {
   }
 
   test("users with myreviews (ToMany) and myreviews->product (ToOne)") {
-    val plan = Seq(TaskNode("myreviews", ToMany(Keys.userKey, getReviewsByUser), TaskNode("product", ToOne(Keys.productKey, getProducts))))
+    val plan = Seq(TaskNode("myreviews", ToMany(userIdExtractor, getReviewsByUser), TaskNode("product", ToOne(productIdExtractor, getProducts))))
 
     val result = scheduler.run(users)(plan).await
 
@@ -44,9 +44,9 @@ class ExecutionSchedulerSuite extends FunSuite with TestCases {
 
   test("load multiple nested relations from 'to many'"){
     val plan = Seq(
-      TaskNode("reviews", ToMany(Keys.productKey, getReviewsByProduct),
-        TaskNode("categories", ToMany(Keys.productKey, getCategoriesByProduct)),
-        TaskNode("reviewer", ToOne(Keys.userKey, getUsers))
+      TaskNode("reviews", ToMany(productIdExtractor, getReviewsByProduct),
+        TaskNode("categories", ToMany(productIdExtractor, getCategoriesByProduct)),
+        TaskNode("reviewer", ToOne(userIdExtractor, getUsers))
       )
     )
 
@@ -67,9 +67,9 @@ class ExecutionSchedulerSuite extends FunSuite with TestCases {
 
   test("joind execution on dependend relalation 'categories'"){
     val plan = Seq(
-      TaskNode("categories", ToMany(Keys.productKey, getCategoriesByProduct)),
-      TaskNode("reviews", ToMany(Keys.productKey, getReviewsByProduct),
-        TaskNode("categories", ToMany(Keys.productKey, getCategoriesByProduct))
+      TaskNode("categories", ToMany(productIdExtractor, getCategoriesByProduct)),
+      TaskNode("reviews", ToMany(productIdExtractor, getReviewsByProduct),
+        TaskNode("categories", ToMany(productIdExtractor, getCategoriesByProduct))
       )
     )
 

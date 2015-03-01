@@ -10,11 +10,11 @@ class ProductService extends FakeService {
   ).map(p => (p.id, p)).toMap
 
   val allProducts = products.values.toSeq
-  val getProducts: RelationSource[Int, Product] = products.filterKeys(_).asFuture
-  val getProductsByCategories: RelationSource[String, Seq[Product]] = _.map(cat => (cat, allProducts.filter(_.categoryIds.contains(cat)))).filterNot(_._2.isEmpty).toMap.asFuture
-  val getCategories: RelationSource[String, Category] = _.map(c => (c, Category(c))).toMap.asFuture
-  val getCategoriesByProduct: RelationSource[Int, Seq[Category]] = products.filterKeys(_).mapValues(p => p.categoryIds.map(Category)).asFuture
-  val getCategorySize: RelationSource[String, Int] = getProductsByCategories(_).map(_.mapValues(_.size))
+  val getProducts: Source[Int, Product] = products.filterKeys(_).asFuture
+  val getProductsByCategories: Source[String, Seq[Product]] = _.map(cat => (cat, allProducts.filter(_.categoryIds.contains(cat)))).filterNot(_._2.isEmpty).toMap.asFuture
+  val getCategories: Source[String, Category] = _.map(c => (c, Category(c))).toMap.asFuture
+  val getCategoriesByProduct: Source[Int, Seq[Category]] = products.filterKeys(_).mapValues(p => p.categoryIds.map(Category)).asFuture
+  val getCategorySize: Source[String, Int] = getProductsByCategories(_).map(_.mapValues(_.size))
 }
 
 case class Product(id: Int, title: String, categoryIds: String*)
