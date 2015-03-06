@@ -21,7 +21,7 @@ trait CompositionResponseBuilder {
 
     def composedJson(obj: Any, clazz: Class[_])(implicit request: Request): Future[ResponseBuilder] = {
       request.params.get(PropertiesParam)
-        .map(propertiesParser.apply)
+        .map(propertiesParser.parse)
         .map{
           case Right(propertyTree) =>
             relationComposer.compose(obj, clazz)(propertyTree)

@@ -5,14 +5,14 @@ import net.mm.composer.properties.TokenParser._
 trait PropertiesParser {
   type Error = String
 
-  def apply(properties: String): Either[Error, Seq[Property]]
+  def parse(properties: String): Either[Error, Seq[Property]]
 }
 
 class PropertiesParserImpl private(optModifiers: Option[Seq[Modifier[_]]] = None) extends PropertiesParser {
 
   def this(modifiers: Modifier[_]*) = this(if (modifiers.isEmpty) None else Some(modifiers))
 
-  override def apply(propertiesStr: String): Either[Error, Seq[Property]] = parseAll(properties, propertiesStr) match {
+  override def parse(propertiesStr: String): Either[Error, Seq[Property]] = parseAll(properties, propertiesStr) match {
     case Success(tree, _) => Right(tree)
     case NoSuccess(msg, next) => Left(s"$msg (${next.pos})")
   }
