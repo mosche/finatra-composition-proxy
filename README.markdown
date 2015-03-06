@@ -100,10 +100,11 @@ Similar to Facebook's [*field expansion (Graph API)*](https://developers.faceboo
 Properties are queried according to the following grammar:
 
 - Property => *Relation* **|** *Field*
+- Properties => **(** *Property*, **)** __*__ *Property*
 - Field => *AlphaNumericIdentifier*
-- Relation => *Field* . ( **(** *Property*, **)** __*__ *Property* )
+- Relation => *Field* . ( *Properties* )
 
-A *Relation* is then appended to the request as a query parameter *properties*.
+*Properties* are then appended to the request as a query parameter *properties*, e.g. `?properties=id,title,reviews(stars)`
 
 ### The execution plan
 
@@ -136,7 +137,7 @@ There's actually no remote services used in this example. However, some fake ser
 ##### Example 1: Load a product with id and title only<br>
 
 ```
-curl http://localhost:7070/shop/products/1?properties=product(id,title)
+curl http://localhost:7070/shop/products/1?properties=id,title
 ```
 
 ```javascript
@@ -149,7 +150,7 @@ curl http://localhost:7070/shop/products/1?properties=product(id,title)
 ##### Example 2: Load a product with all its categories, reviews and the reviewer<br>
  
 ```
-curl http://localhost:7070/shop/products/1?properties=product(id,title,reviews(stars,review,reviewer(username)),categories(id))
+curl http://localhost:7070/shop/products/1?properties=id,title,reviews(stars,review,reviewer(username)),categories(id)
 ```
 
 ```javascript

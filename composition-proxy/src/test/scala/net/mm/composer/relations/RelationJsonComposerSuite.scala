@@ -20,18 +20,18 @@ class RelationJsonComposerSuite extends FunSuite with TestCases with TestCasesCo
   )
 
   test("compose object with flat properties"){
-    val tree = RelationProperty("product", FieldProperty("id"), FieldProperty("categoryIds"))
+    val properties = Seq(FieldProperty("id"), FieldProperty("categoryIds"))
     val obj = Product(1,"book", "ebook")
 
-    val json = composer.compose(obj, classOf[Product])(tree).await
+    val json = composer.compose(obj, classOf[Product])(properties).await
     json.toString shouldBe """{"id":1,"categoryIds":["book","ebook"]}"""
   }
 
   test("filtering of field properties"){
-    val tree = RelationProperty("product", FieldProperty("id"))
+    val properties = Seq(FieldProperty("id"))
     val obj = Product(1,"book", "ebook")
 
-    val json = composer.compose(obj, classOf[Product])(tree).await
+    val json = composer.compose(obj, classOf[Product])(properties).await
     json.toString shouldBe """{"id":1}"""
   }
 
@@ -39,12 +39,12 @@ class RelationJsonComposerSuite extends FunSuite with TestCases with TestCasesCo
     when(dataSource.get[User, String](any())(equal("steff"))).thenReturn(Some(User("steff")))
     when(dataSource.get[User, String](any())(equal("mark"))).thenReturn(Some(User("mark")))
 
-    val tree = RelationProperty("reviews", FieldProperty("id"),
+    val properties = Seq(FieldProperty("id"),
       RelationProperty("reviewer", FieldProperty("username"))
     )
     val seq = Seq(Review(1, 1, "steff"),Review(7, 5, "mark"))
 
-    val json = composer.compose(seq, classOf[Review])(tree).await
+    val json = composer.compose(seq, classOf[Review])(properties).await
     json.toString shouldBe """[{"id":1,"reviewer":{"username":"steff"}},{"id":7,"reviewer":{"username":"mark"}}]"""
   }
 
@@ -52,12 +52,12 @@ class RelationJsonComposerSuite extends FunSuite with TestCases with TestCasesCo
     when(dataSource.get[Category, String](any())(equal("computer"))).thenReturn(Some(Category("computer")))
     when(dataSource.get[Category, String](any())(equal("laptop"))).thenReturn(Some(Category("laptop")))
 
-    val tree = RelationProperty("product", FieldProperty("id"),
+    val properties = Seq(FieldProperty("id"),
       RelationProperty("categories", FieldProperty("id"))
     )
     val obj = Product(1,"computer", "laptop")
 
-    val json = composer.compose(obj, classOf[Product])(tree).await
+    val json = composer.compose(obj, classOf[Product])(properties).await
 
     json.toString shouldBe """{"id":1,"categories":[{"id":"computer"},{"id":"laptop"}]}"""
   }
@@ -67,12 +67,12 @@ class RelationJsonComposerSuite extends FunSuite with TestCases with TestCasesCo
       Review(1, 1, "steff"), Review(2, 1, "mark"), Review(3, 1, "chris"))
     ))
 
-    val tree = RelationProperty("product", FieldProperty("id"),
+    val properties = Seq(FieldProperty("id"),
       RelationProperty("reviews", FieldProperty("id"))
     )
     val obj = Product(1,"computer", "laptop")
 
-    val json = composer.compose(obj, classOf[Product])(tree).await
+    val json = composer.compose(obj, classOf[Product])(properties).await
     json.toString shouldBe """{"id":1,"reviews":[{"id":1},{"id":2},{"id":3}]}"""
   }
 }

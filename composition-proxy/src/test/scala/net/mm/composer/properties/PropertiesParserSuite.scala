@@ -9,17 +9,17 @@ class PropertiesParserSuite extends FunSuite {
   test("relation with field") {
     val parser = new PropertiesParserImpl
 
-    parser("reviewer ( username )") shouldBe Right(
-      RelationProperty("reviewer", FieldProperty("username"))
+    parser("username") shouldBe Right(
+      Seq(FieldProperty("username"))
     )
   }
 
   test("nested relations") {
     val parser = new PropertiesParserImpl
 
-    val res = parser("product(title, description, reviews(rating, text, reviewer(username, avatar), product(title)))")
+    val res = parser("title, description, reviews(rating, text, reviewer(username, avatar), product(title))")
     res shouldBe Right(
-      RelationProperty("product", FieldProperty("title"), FieldProperty("description"),
+      Seq(FieldProperty("title"), FieldProperty("description"),
         RelationProperty("reviews", FieldProperty("rating"), FieldProperty("text"),
           RelationProperty("reviewer", FieldProperty("username"), FieldProperty("avatar")),
           RelationProperty("product", FieldProperty("title"))
@@ -32,7 +32,7 @@ class PropertiesParserSuite extends FunSuite {
     val parser = new PropertiesParserImpl(Modifier[Int]("limit"))
 
     parser("reviews(id)") shouldBe Right(
-      RelationProperty("reviews", FieldProperty("id"))
+      Seq(RelationProperty("reviews", FieldProperty("id")))
     )
   }
 
@@ -40,7 +40,7 @@ class PropertiesParserSuite extends FunSuite {
     val parser = new PropertiesParserImpl(Modifier[Int]("limit"))
 
     parser("reviews[limit:10](id)") shouldBe Right(
-      RelationProperty("reviews", Map("limit" -> 10), FieldProperty("id"))
+      Seq(RelationProperty("reviews", Map("limit" -> 10), FieldProperty("id")))
     )
   }
 

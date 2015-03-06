@@ -5,14 +5,14 @@ import net.mm.composer.properties.TokenParser._
 trait PropertiesParser {
   type Error = String
 
-  def apply(properties: String): Either[Error, RelationProperty]
+  def apply(properties: String): Either[Error, Seq[Property]]
 }
 
 class PropertiesParserImpl private(optModifiers: Option[Seq[Modifier[_]]] = None) extends PropertiesParser {
 
   def this(modifiers: Modifier[_]*) = this(if (modifiers.isEmpty) None else Some(modifiers))
 
-  override def apply(properties: String): Either[Error, RelationProperty] = parseAll(relation, properties) match {
+  override def apply(propertiesStr: String): Either[Error, Seq[Property]] = parseAll(properties, propertiesStr) match {
     case Success(tree, _) => Right(tree)
     case NoSuccess(msg, next) => Left(s"$msg (${next.pos})")
   }
@@ -33,10 +33,10 @@ class PropertiesParserImpl private(optModifiers: Option[Seq[Modifier[_]]] = None
       .withFailureMessage(s"Expected: ${modifiers.names}")
   }
 
-  private lazy val properties = "(" ~> repsep(relation | field, ",") <~ ")"
+  private lazy val properties = repsep(relation | field, ",") 
 
   private val field = ident map FieldProperty
-  private val relation: Parser[RelationProperty] = ident ~ (modifiers | noModifiers) ~ properties map {
+  private val relation: Parser[RelationProperty] = ident ~ (modifiers | noModifiers) ~ ("(" ~> properties <~ ")") map {
     case name ~ modifiers ~ properties => RelationProperty(name, modifiers, properties: _*)
   }
 }

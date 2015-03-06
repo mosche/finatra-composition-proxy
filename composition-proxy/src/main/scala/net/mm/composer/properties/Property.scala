@@ -7,7 +7,6 @@ sealed trait Property {
 case class FieldProperty(name: String) extends Property
 
 case class RelationProperty(name: String, modifiers: Map[String, Any], properties: Property*) extends Property {
-  def childRelations: Seq[RelationProperty] = properties.filter(_.isInstanceOf[RelationProperty]).asInstanceOf[Seq[RelationProperty]]
   def childNames: Seq[String] = properties.map(_.name)
 }
 

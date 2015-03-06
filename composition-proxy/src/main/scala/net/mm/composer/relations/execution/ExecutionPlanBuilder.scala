@@ -1,14 +1,19 @@
 package net.mm.composer.relations.execution
 
-import net.mm.composer.properties.{RelationProperty}
+import net.mm.composer.properties.{Property, RelationProperty}
 import net.mm.composer.relations.Relation.AnyRelation
 import net.mm.composer.relations.RelationRegistry
 import net.mm.composer.relations.execution.ExecutionHint.NonBijective
+import net.mm.composer.utils.SeqTypeFilterSupport._
 
 trait ExecutionPlanBuilder {
-  def apply[T](property: RelationProperty)(implicit m: Manifest[T]): ExecutionPlan
+  def apply(relationProperties: Seq[RelationProperty], clazz: Class[_]): ExecutionPlan
 
-  def apply(property: RelationProperty, clazz: Class[_]): ExecutionPlan
+  def apply(properties: Seq[Property], clazz: Class[_])(implicit d: DummyImplicit): ExecutionPlan
+
+  def apply[T](relationProperties: Seq[RelationProperty])(implicit m: Manifest[T]): ExecutionPlan = apply(relationProperties, m.runtimeClass)
+
+  def apply[T](properties: Seq[Property])(implicit m: Manifest[T], d: DummyImplicit): ExecutionPlan = apply(properties, m.runtimeClass)
 }
 
 class ExecutionPlanBuilderImpl(implicit relationRegistry: RelationRegistry) extends ExecutionPlanBuilder {
@@ -20,19 +25,20 @@ class ExecutionPlanBuilderImpl(implicit relationRegistry: RelationRegistry) exte
     def prepone(task: TaskNode): Boolean = !rel.executionHints(NonBijective) && rel.idExtractor == task.relation.idExtractor
   }
 
-  def apply[T](property: RelationProperty)(implicit m: Manifest[T]) = {
-    apply(property, m.runtimeClass)
+  def apply(properties: Seq[Property], clazz: Class[_])(implicit dummyImplicit: DummyImplicit): ExecutionPlan = {
+    apply(properties.typeFilter[RelationProperty], clazz)
   }
 
-  def apply(property: RelationProperty, clazz: Class[_]): ExecutionPlan = {
+  def apply(relationProperties: Seq[RelationProperty], clazz: Class[_]): ExecutionPlan = {
     val tempGraph = for {
-      tree <- property.childRelations
-      relation <- relationRegistry.get(clazz, tree.name)
+      relationProperty <- relationProperties
+      relation <- relationRegistry.get(clazz, relationProperty.name)
     } yield {
       // build the execution plan buttom up by sorting tasks according to a cost function
       // and preponing tasks to their parent level if possible
-      val (preponed, childTasks) = apply(tree, relation.target).partition(relation.prepone)
-      (preponed :+ new TaskNode(tree.name, relation, childTasks.sortBy(_.costs): _*)).sortBy(_.costs)
+      val childRelations = relationProperty.properties.typeFilter[RelationProperty]
+      val (preponed, childTasks) = apply(childRelations, relation.target).partition(relation.prepone)
+      (preponed :+ new TaskNode(relationProperty.name, relation, childTasks.sortBy(_.costs): _*)).sortBy(_.costs)
     }
     tempGraph.flatten
   }
