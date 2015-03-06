@@ -63,7 +63,7 @@ class CompositionControllerBuilder{
     implicit val relationComposer = relationComposerFactory(buildRegistry())
 
     new CompositionController{
-      resources.mapValues(_.apply(render)).foreach{
+      resources.mapValues(_.apply(() => render)).foreach{
         // add GET route for each registered resource
         case (segments, resource) => get(path(segments))(resource)
       }
