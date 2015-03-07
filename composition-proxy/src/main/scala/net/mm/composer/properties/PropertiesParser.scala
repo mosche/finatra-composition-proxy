@@ -1,18 +1,18 @@
 package net.mm.composer.properties
 
+import net.mm.composer.properties.PropertiesParser.{PropertiesParser,Error}
 import net.mm.composer.properties.TokenParser._
 
-trait PropertiesParser {
+object PropertiesParser {
   type Error = String
-
-  def parse(properties: String): Either[Error, Seq[Property]]
+  type PropertiesParser = String => Either[Error, Seq[Property]]
 }
 
 class PropertiesParserImpl private(optModifiers: Option[Seq[Modifier[_]]] = None) extends PropertiesParser {
 
   def this(modifiers: Modifier[_]*) = this(if (modifiers.isEmpty) None else Some(modifiers))
 
-  override def parse(propertiesStr: String): Either[Error, Seq[Property]] = parseAll(properties, propertiesStr) match {
+  override def apply(str: String): Either[Error, Seq[Property]] = parseAll(properties, str) match {
     case Success(tree, _) => Right(tree)
     case NoSuccess(msg, next) => Left(s"$msg (${next.pos})")
   }

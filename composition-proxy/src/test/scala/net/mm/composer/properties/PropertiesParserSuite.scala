@@ -9,7 +9,7 @@ class PropertiesParserSuite extends FunSuite {
   test("relation with field") {
     val parser = new PropertiesParserImpl
 
-    parser.parse("username") shouldBe Right(
+    parser.apply("username") shouldBe Right(
       Seq(FieldProperty("username"))
     )
   }
@@ -17,7 +17,7 @@ class PropertiesParserSuite extends FunSuite {
   test("nested relations") {
     val parser = new PropertiesParserImpl
 
-    val res = parser.parse("title, description, reviews(rating, text, reviewer(username, avatar), product(title))")
+    val res = parser.apply("title, description, reviews(rating, text, reviewer(username, avatar), product(title))")
     res shouldBe Right(
       Seq(FieldProperty("title"), FieldProperty("description"),
         RelationProperty("reviews", FieldProperty("rating"), FieldProperty("text"),
@@ -31,7 +31,7 @@ class PropertiesParserSuite extends FunSuite {
   test("relation with empty modifiers") {
     val parser = new PropertiesParserImpl(Modifier[Int]("limit"))
 
-    parser.parse("reviews(id)") shouldBe Right(
+    parser.apply("reviews(id)") shouldBe Right(
       Seq(RelationProperty("reviews", FieldProperty("id")))
     )
   }
@@ -39,7 +39,7 @@ class PropertiesParserSuite extends FunSuite {
   test("relation with modifiers") {
     val parser = new PropertiesParserImpl(Modifier[Int]("limit"))
 
-    parser.parse("reviews[limit:10](id)") shouldBe Right(
+    parser.apply("reviews[limit:10](id)") shouldBe Right(
       Seq(RelationProperty("reviews", Map("limit" -> 10), FieldProperty("id")))
     )
   }
@@ -47,7 +47,7 @@ class PropertiesParserSuite extends FunSuite {
   test("usage of invalid modifier") {
     val parser = new PropertiesParserImpl(Modifier[Int]("limit"), Modifier[String]("order"))
 
-    parser.parse("reviews[sorting:DESC](id)") match {
+    parser.apply("reviews[sorting:DESC](id)") match {
       case Left(msg) => msg should include("Expected: limit, order")
       case other => fail(s"Expected error, but was $other")
     }
@@ -56,7 +56,7 @@ class PropertiesParserSuite extends FunSuite {
   test("usage of invalid modifier value") {
     val parser = new PropertiesParserImpl(Modifier[Int]("limit"), Modifier[String]("order"))
 
-    parser.parse("reviews[limit:DESC](id)") match {
+    parser.apply("reviews[limit:DESC](id)") match {
       case Left(msg) => msg should include("limit: int value expected")
       case other => fail(s"Expected error, but was $other")
     }
@@ -65,7 +65,7 @@ class PropertiesParserSuite extends FunSuite {
   test("general syntax error") {
     val parser = new PropertiesParserImpl
 
-    parser.parse("reviews(id") match {
+    parser.apply("reviews(id") match {
       case Left(msg) => msg should include("expected")
       case other => fail(s"Expected error, but was $other")
     }

@@ -1,7 +1,7 @@
 package net.mm.composer
 
 import com.twitter.finatra.Controller
-import net.mm.composer.properties.PropertiesParser
+import net.mm.composer.properties.PropertiesParser.PropertiesParser
 import net.mm.composer.relations.Relation._
 import net.mm.composer.relations.RelationRegistry._
 import net.mm.composer.relations.execution.ExecutionScheduler
@@ -54,13 +54,15 @@ class CompositionControllerBuilder{
    * @return the controller
    */
   def buildController(pathPrefix: String = "")
-     (implicit propertiesParser: PropertiesParser,
-      executionScheduler: ExecutionScheduler,
+     (implicit executionScheduler: ExecutionScheduler,
+      propertiesParserFactory: RelationRegistry => Class[_] => PropertiesParser,
       relationComposerFactory: RelationRegistry => RelationJsonComposer): Controller = {
 
     def path(segments: String):String = if(pathPrefix.isEmpty) "/"+segments else s"/${pathPrefix.stripMargin('/')}/$segments"
 
-    implicit val relationComposer = relationComposerFactory(buildRegistry())
+    val relationRegistry = buildRegistry()
+    implicit val relationComposer = relationComposerFactory(relationRegistry)
+    implicit val propertiesParser = propertiesParserFactory(relationRegistry)
 
     new CompositionController{
       resources.mapValues(_.apply(() => render)).foreach{

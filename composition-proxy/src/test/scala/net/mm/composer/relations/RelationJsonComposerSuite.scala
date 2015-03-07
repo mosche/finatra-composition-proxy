@@ -1,6 +1,7 @@
 package net.mm.composer.relations
 
 import net.mm.composer.FutureSupport._
+import net.mm.composer.MockAnswer
 import net.mm.composer.properties.{FieldProperty, RelationProperty}
 import net.mm.composer.relations.execution.{ExecutionPlan, ExecutionPlanBuilder, ExecutionScheduler}
 import org.mockito.Matchers.{any, eq => equal}

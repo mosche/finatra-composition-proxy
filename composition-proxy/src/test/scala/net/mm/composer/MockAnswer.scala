@@ -1,4 +1,4 @@
-package net.mm.composer.relations
+package net.mm.composer
 
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
