@@ -5,7 +5,6 @@ import net.mm.composer.relations._
 import org.mockito.Mockito.when
 import org.scalatest.FunSuite
 import org.scalatest.Matchers._
-import net.mm.composer.FutureSupport._
 
 class ExecutionSchedulerSuite extends FunSuite with TestCases {
 
@@ -43,7 +42,7 @@ class ExecutionSchedulerSuite extends FunSuite with TestCases {
   private def scheduler = new ExecutionSchedulerImpl
 
   test("empty execution plan") {
-    scheduler.run(users.values)(Seq.empty).await shouldBe RelationDataSource()
+    scheduler.run(Seq.empty)(users.values).await shouldBe RelationDataSource()
   }
 
   test("users with myreviews (ToMany)") {
@@ -51,7 +50,7 @@ class ExecutionSchedulerSuite extends FunSuite with TestCases {
     
     val plan = Seq(TaskNode("myreviews", ToMany(userIdExtractor, getReviewsByUser)))
 
-    val result = scheduler.run(users.values)(plan).await
+    val result = scheduler.run(plan)(users.values).await
 
     result shouldBe RelationDataSource(
       getReviewsByUser -> reviewsByUser
@@ -64,7 +63,7 @@ class ExecutionSchedulerSuite extends FunSuite with TestCases {
 
     val plan = Seq(TaskNode("myreviews", ToMany(userIdExtractor, getReviewsByUser), TaskNode("product", ToOne(productIdExtractor, getProducts))))
 
-    val result = scheduler.run(users.values)(plan).await
+    val result = scheduler.run(plan)(users.values).await
 
     result shouldBe RelationDataSource(
       getReviewsByUser -> reviewsByUser,
@@ -84,7 +83,7 @@ class ExecutionSchedulerSuite extends FunSuite with TestCases {
       )
     )
 
-    val result = scheduler.run(products.values)(plan).await
+    val result = scheduler.run(plan)(products.values).await
     
     result shouldBe RelationDataSource(
       getReviewsByProduct -> reviewsByProduct,
@@ -104,7 +103,7 @@ class ExecutionSchedulerSuite extends FunSuite with TestCases {
       )
     )
 
-    val result = scheduler.run(products.values)(plan).await
+    val result = scheduler.run(plan)(products.values).await
 
     result shouldBe RelationDataSource(
       getReviewsByProduct -> reviewsByProduct,

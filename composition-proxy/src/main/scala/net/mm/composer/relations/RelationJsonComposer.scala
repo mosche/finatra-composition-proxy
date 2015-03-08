@@ -94,16 +94,17 @@ class RelationJsonComposerImpl(implicit executionScheduler: ExecutionScheduler, 
   }
 
   def compose(obj: Any, clazz: Class[_])(properties: Seq[Property]): Future[JsonNode] = {
-    val executionPlan = executionPlanBuilder(properties, clazz)
-
+    val runner = executionScheduler.run(
+        executionPlanBuilder(properties, clazz)
+    )
     val fields = properties.map(_.name)
     val relations = loadRelations(properties, clazz)
 
     obj match {
-      case seq: Seq[_] => executionScheduler.run(seq)(executionPlan).map( implicit dataSource =>
+      case seq: Seq[_] => runner(seq).map( implicit dataSource =>
         toArrayNode(fields, relations)(seq)
       )
-      case _ => executionScheduler.run(obj)(executionPlan).map( implicit dataSource =>
+      case _ => runner(obj).map( implicit dataSource =>
         toValueOrObjectNode(fields, relations)(obj)
       )
     }

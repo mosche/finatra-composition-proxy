@@ -15,7 +15,7 @@ class RelationJsonComposerSuite extends FunSuite with TestCases with TestCasesCo
   val dataSource = mock[RelationDataSource]
 
   val composer = new RelationJsonComposerImpl()(
-    mock[ExecutionScheduler](MockAnswer(dataSource.asFuture)),
+    mock[ExecutionScheduler](MockAnswer(mock[ExecutionScheduler#Runner](MockAnswer(dataSource.asFuture)))),
     mock[ExecutionPlanBuilder](MockAnswer[ExecutionPlan]()),
     relationRegistry
   )

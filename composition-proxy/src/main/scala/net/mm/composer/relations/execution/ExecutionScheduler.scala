@@ -8,97 +8,109 @@ import scala.collection.mutable
 
 
 trait ExecutionScheduler {
-  /**
-   * Run the execution plan on the given input sequence.
-   * @return a relation data source containing all results
-   */
-  def run(seq: Iterable[Any])(tasks: ExecutionPlan): Future[RelationDataSource]
 
-  /**
-   * Run the execution plan on the given entity.
-   * @return a relation data source containing all results
-   */
-  def run(entity: Any)(tasks: ExecutionPlan): Future[RelationDataSource]
+  def run(tasks: ExecutionPlan): Runner
+
+  trait Runner {
+    /**
+     * Run the execution plan on the given input sequence.
+     * @return a relation data source containing all results
+     */
+    def apply(seq: Iterable[Any]): Future[RelationDataSource]
+    /**
+     * Run the execution plan on the given entity.
+     * @return a relation data source containing all results
+     */
+    def apply(any: Any): Future[RelationDataSource]
+  }
 }
 
 
 class ExecutionSchedulerImpl extends ExecutionScheduler {
-  type Executors = mutable.Map[Relation.Source[_, _], BatchSourceExecutor[_, _]]
 
   private val logger = Logger.get
 
-  def run(entity: Any)(tasks: ExecutionPlan): Future[RelationDataSource] = run(Seq(entity))(tasks)
+  def run(tasks: ExecutionPlan): Runner = new ExecutionPlanRunner(tasks) with TimedRunner
 
-  def run(seq: Iterable[Any])(tasks: ExecutionPlan): Future[RelationDataSource] = {
-    val time = Time.now
-    val executors: Executors = mutable.Map.empty
-    schedule(tasks, seq)(executors) map { _ =>
-      logger.ifDebug(s"Loaded relations in ${time.untilNow}")
-      new RelationDataSource(executors.mapValues(_.getResult()).toMap)
+  trait TimedRunner extends Runner {
+    abstract override def apply(seq: Iterable[Any]): Future[RelationDataSource] = {
+      val time = Time.now
+      super.apply(seq).onSuccess(_ => logger.ifDebug(s"Loaded relations in ${time.untilNow}"))
     }
   }
 
-  private def getExecutor[Id, T](executor: Relation.Source[Id, T])(implicit executors: Executors): BatchSourceExecutor[Id, T] = executors.synchronized {
-    executors
-      .asInstanceOf[mutable.Map[Relation.Source[Id, T], BatchSourceExecutor[Id, T]]]
-      .getOrElseUpdate(executor, new BatchSourceExecutor(executor))
-  }
+  class ExecutionPlanRunner(tasks: ExecutionPlan) extends Runner {
 
-  /**
-   * Schedule execution according to the given execution plan depth first in reverse order.
-   */
-  private def schedule[From, Id](tasks: ExecutionPlan, seq: Iterable[From])(implicit executors: Executors): Future[Any] = {
-    logger.ifTrace(s"Scheduling tasks ${tasks.names} for ${seq.headOption.map(_.getClass.getSimpleName).getOrElse("Nothing")}")
+    def apply(any: Any): Future[RelationDataSource] = apply(Seq(any))
 
-    // register ids first to allow aggregation of requests
-    val idsPerTask = tasks.map(task => (task, registerIds(task.relation.asInstanceOf[Relation[From, _, Id]], seq))).toMap
+    def apply(seq: Iterable[Any]): Future[RelationDataSource] = schedule(tasks, seq).map(_ =>
+        new RelationDataSource(executors.mapValues(_.getResult()).toMap)
+    )
 
-    // execute in reverse order (from right) and fork independent executions
-    val forkedExecution = tasks.foldRight[Seq[(Set[TaskNode], Future[_])]](Seq.empty) {
-      case (currentTask, taskAkk) =>
-        val (dependent, independent) = taskAkk.partition(_._1.exists(_ dependsOn currentTask))
-        if (dependent.isEmpty) {
-          // fork execution
-          logger.ifTrace(s"Forking execution for task ${currentTask.name}")
-          (Set(currentTask), execute(currentTask, idsPerTask(currentTask))) +: independent
-        } else {
-          // join execution on dependent plans
-          val dependentTasks = dependent.flatMap(_._1).toSet
-          logger.ifTrace(s"Joining execution for task ${currentTask.name} due to ${dependentTasks.names}")
-          val joinedFuture = Future.join(dependent.map(_._2)).flatMap(_ => execute(currentTask, idsPerTask(currentTask)))
-          (dependentTasks, joinedFuture) +: independent
-        }
+    private type Executors[Id, T] = mutable.Map[Relation.Source[Id, T], BatchSourceExecutor[Id, T]]
+    private val executors:Executors[_,_] = mutable.Map.empty
+
+    implicit private class BatchSource[Id, T](source: Relation.Source[Id, T]){
+      def batch: BatchSourceExecutor[Id, T] = executors.synchronized {
+        executors.asInstanceOf[Executors[Id,T]].getOrElseUpdate(source, new BatchSourceExecutor(source))
+      }
     }
-    // join all independent executions
-    Future.join(forkedExecution.map(_._2))
-  }
 
-  private def registerIds[From, Id](relation: Relation[From, _, Id], seq: Iterable[From])(implicit executors: Executors): Set[Id] = {
-    val ids: Set[Id] = seq.flatMap(relation.idExtractor).toSet
-    getExecutor(relation.source).addIds(ids)
-    ids
-  }
+    /**
+     * Schedule execution according to the given execution plan depth first in reverse order.
+     */
+    private def schedule[From, Id](tasks: ExecutionPlan, seq: Iterable[From]): Future[Any] = {
+      logger.ifTrace(s"Scheduling tasks ${tasks.names} for ${seq.headOption.map(_.getClass.getSimpleName).getOrElse("Nothing")}")
 
-  /**
-   * Execute a task with its subtasks.
-   */
-  private def execute[Id, T](task: TaskNode, ids: Set[Id])(implicit executors: Executors): Future[Any] = {
-    // resolve and descend depth first to load child nodes
-    val res = task.relation match {
-      case rel: ToOne[_, T, Id] => for {
-        result <- getExecutor(rel.source).execute(ids)
-        _ <- schedule(task.subTasks, result.values.toSeq)
-      } yield ()
+      // register ids first to allow aggregation of requests
+      val idsPerTask = tasks.map(task => (task, registerIds(task.relation.asInstanceOf[Relation[From, _, Id]], seq))).toMap
 
-      case rel: ToMany[_, T, Id] => for {
-        result <- getExecutor(rel.source).execute(ids)
-        _ <- schedule(task.subTasks, result.values.flatten.toSeq)
-      } yield ()
+      // execute in reverse order (from right) and fork independent executions
+      val forkedExecution = tasks.foldRight[Seq[(Set[TaskNode], Future[_])]](Seq.empty) {
+        case (currentTask, taskAkk) =>
+          val (dependent, independent) = taskAkk.partition(_._1.exists(_ dependsOn currentTask))
+          if (dependent.isEmpty) {
+            // fork execution
+            logger.ifTrace(s"Forking execution for task ${currentTask.name}")
+            (Set(currentTask), execute(currentTask, idsPerTask(currentTask))) +: independent
+          } else {
+            // join execution on dependent plans
+            val dependentTasks = dependent.flatMap(_._1).toSet
+            logger.ifTrace(s"Joining execution for task ${currentTask.name} due to ${dependentTasks.names}")
+            val joinedFuture = Future.join(dependent.map(_._2)).flatMap(_ => execute(currentTask, idsPerTask(currentTask)))
+            (dependentTasks, joinedFuture) +: independent
+          }
+      }
+      // join all independent executions
+      Future.join(forkedExecution.map(_._2))
     }
-    res.respond {
-      case Return(_) => logger.ifDebug(s"Finished execution plan ${Seq(task).debugString} with $ids")
-      case Throw(e) => logger.ifWarning(e, s"Failed to execute ${Seq(task).debugString} with $ids")
 
+    private def registerIds[From, Id](relation: Relation[From, _, Id], seq: Iterable[From]): Set[Id] = {
+      val ids: Set[Id] = seq.flatMap(relation.idExtractor).toSet
+      relation.source.batch.addIds(ids)
+      ids
+    }
+
+    /**
+     * Execute a task with its subtasks.
+     */
+    private def execute[Id, T](task: TaskNode, ids: Set[Id]): Future[Any] = {
+      // resolve and descend depth first to load child nodes
+      val res = task.relation match {
+        case rel: ToOne[_, T, Id] => for {
+          result <- rel.source.batch.execute(ids)
+          _ <- schedule(task.subTasks, result.values.toSeq)
+        } yield ()
+
+        case rel: ToMany[_, T, Id] => for {
+          result <- rel.source.batch.execute(ids)
+          _ <- schedule(task.subTasks, result.values.flatten.toSeq)
+        } yield ()
+      }
+      res.respond {
+        case Return(_) => logger.ifDebug(s"Finished execution plan ${Seq(task).debugString} with $ids")
+        case Throw(e) => logger.ifWarning(e, s"Failed to execute ${Seq(task).debugString} with $ids")
+      }
     }
   }
 }
