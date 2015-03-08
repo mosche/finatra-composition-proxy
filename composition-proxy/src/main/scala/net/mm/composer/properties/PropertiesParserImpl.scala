@@ -2,6 +2,20 @@ package net.mm.composer.properties
 
 import net.mm.composer.properties.TokenParser._
 
+/**
+ * PropertiesParser to parse a properties string into a property tree
+ * according to the following grammar:
+ * - Property => Relation | Field
+ * - Field => AlphaNumericIdentifier
+ * - Relation => Field(Property*)
+ *
+ * Optionally modifiers are supported for relations:
+ *  - Modifier => AlphaNumericIdentifier
+ *  - Value => depends on modifier
+ *  - Relation => Field[Modifier=Value*](Property*)
+ *
+ *  where lists * are generally separated by ','.
+ */
 class PropertiesParserImpl private(optModifiers: Option[Seq[Modifier[_]]] = None) extends PropertiesParser {
 
   def this(modifiers: Modifier[_]*) = this(if (modifiers.isEmpty) None else Some(modifiers))

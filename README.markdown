@@ -102,7 +102,7 @@ Properties are queried according to the following grammar:
 - Property => *Relation* **|** *Field*
 - Properties => **(** *Property*, **)** __*__ *Property*
 - Field => *AlphaNumericIdentifier*
-- Relation => *Field* . ( *Properties* )
+- Relation => *Field* ( *Properties* )
 
 *Properties* are then appended to the request as a query parameter *properties*, e.g. `?properties=id,title,reviews(stars)`
 

@@ -3,7 +3,10 @@ package net.mm.composer.properties
 import net.mm.composer.relations.RelationRegistry
 import net.mm.composer.utils.SeqTypeFilterSupport._
 
-
+/**
+ * Validator to identify wrong properties that are neither
+ * present as fields nor registered as relation.
+ */
 class PropertiesValidatorImpl(clazz: Class[_])(implicit relationRegistry: RelationRegistry) extends PropertiesReader {
 
   private def validate(properties: Seq[Property], clazz: Class[_]): Option[Error] = {
