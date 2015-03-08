@@ -3,13 +3,14 @@ package net.mm.composer.relations
 import com.twitter.util.Future
 import net.mm.composer.relations.Relation._
 import net.mm.composer.relations.execution.{ExecutionHint, Hint, SerializationHint}
+import net.mm.composer.utils.SeqTypeFilterSupport._
 
 sealed abstract class Relation[-From, Target, Id](val target: Class[_]) {
   def idExtractor: IdExtractor[From, Id]
   def source: Source[Id, Target]
   def hints: Seq[Hint]
-  val executionHints = hints.filter(_.isInstanceOf[ExecutionHint]).toSet
-  val serializationHints = hints.filter(_.isInstanceOf[SerializationHint]).toSet
+  val executionHints = hints.typeFilter[ExecutionHint].toSet
+  val serializationHints = hints.typeFilter[SerializationHint].toSet
 }
 
 object Relation {
