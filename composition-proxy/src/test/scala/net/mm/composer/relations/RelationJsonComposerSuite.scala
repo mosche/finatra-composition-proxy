@@ -37,8 +37,8 @@ class RelationJsonComposerSuite extends FunSuite with TestCases with TestCasesCo
   }
 
   test("compose sequence with nested 'to one' relation property"){
-    when(dataSource.get[User, String](any())(equal("steff"))).thenReturn(Some(User("steff")))
-    when(dataSource.get[User, String](any())(equal("mark"))).thenReturn(Some(User("mark")))
+    when(dataSource.get[User, String](any(), equal("steff"))).thenReturn(Some(User("steff")))
+    when(dataSource.get[User, String](any(), equal("mark"))).thenReturn(Some(User("mark")))
 
     val properties = Seq(FieldProperty("id"),
       RelationProperty("reviewer", FieldProperty("username"))
@@ -50,8 +50,8 @@ class RelationJsonComposerSuite extends FunSuite with TestCases with TestCasesCo
   }
 
   test("compose object with nested 'to one' array relation property"){
-    when(dataSource.get[Category, String](any())(equal("computer"))).thenReturn(Some(Category("computer")))
-    when(dataSource.get[Category, String](any())(equal("laptop"))).thenReturn(Some(Category("laptop")))
+    when(dataSource.get[Category, String](any(), equal("computer"))).thenReturn(Some(Category("computer")))
+    when(dataSource.get[Category, String](any(), equal("laptop"))).thenReturn(Some(Category("laptop")))
 
     val properties = Seq(FieldProperty("id"),
       RelationProperty("categories", FieldProperty("id"))
@@ -64,7 +64,7 @@ class RelationJsonComposerSuite extends FunSuite with TestCases with TestCasesCo
   }
 
   test("compose object with nested 'to many' relation property"){
-    when(dataSource.get[Seq[Review], Int](any())(equal(1))).thenReturn(Some(Seq(
+    when(dataSource.get[Seq[Review], Int](any(), equal(1))).thenReturn(Some(Seq(
       Review(1, 1, "steff"), Review(2, 1, "mark"), Review(3, 1, "chris"))
     ))
 

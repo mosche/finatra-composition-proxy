@@ -1,7 +1,7 @@
 package net.mm.composer.relations
 
 case class RelationDataSource private[relations](result: Map[Relation.Source[_, _], collection.Map[_, _]]) {
-  def get[T, Id](relation: Relation[_, T, Id])(id: Id): Option[T] = {
+  def get[T, Id](relation: Relation[_, T, Id], id: Id): Option[T] = {
     result.asInstanceOf[Map[Relation.Source[Id, T], collection.Map[Id, T]]](relation.source).get(id)
   }
 }

@@ -28,7 +28,7 @@ class RelationJsonComposerImpl(implicit executionScheduler: ExecutionScheduler, 
   private implicit class LoadedRelation[From, Target, Id](relation: Relation[From, Target, Id])(implicit dataSource: RelationDataSource) {
 
     def loadTargets(fromObj: From): Iterable[Target] = relation.idExtractor(fromObj).flatMap(id =>
-      dataSource.get(relation)(id)
+      dataSource.get(relation, id)
     )
 
     def loadTarget(fromObj: From): Option[Target] = {
