@@ -1,7 +1,7 @@
 package net.mm.composer
 
 import com.twitter.finatra.Controller
-import net.mm.composer.properties.PropertiesParser.PropertiesParser
+import net.mm.composer.properties.PropertiesParser
 import net.mm.composer.relations.Relation._
 import net.mm.composer.relations.RelationRegistry._
 import net.mm.composer.relations.execution.ExecutionScheduler

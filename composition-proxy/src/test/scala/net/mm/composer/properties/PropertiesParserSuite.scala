@@ -40,7 +40,7 @@ class PropertiesParserSuite extends FunSuite {
     val parser = new PropertiesParserImpl(Modifier[Int]("limit"))
 
     parser.apply("reviews[limit:10](id)") shouldBe Right(
-      Seq(RelationProperty("reviews", Map("limit" -> 10), FieldProperty("id")))
+      Seq(RelationProperty("reviews", Map("limit" -> 10), Seq(FieldProperty("id"))))
     )
   }
 

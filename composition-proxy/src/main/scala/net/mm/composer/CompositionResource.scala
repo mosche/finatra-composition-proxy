@@ -3,7 +3,7 @@ package net.mm.composer
 import com.twitter.finatra.{Request, ResponseBuilder}
 import com.twitter.util.Future
 import net.mm.composer.RichRequest._
-import net.mm.composer.properties.PropertiesParser.PropertiesParser
+import net.mm.composer.properties.PropertiesParser
 import net.mm.composer.properties.Property
 import net.mm.composer.relations.Relation._
 import net.mm.composer.utils.ParamConverter

@@ -1,8 +1,7 @@
 package net.mm.composer
 
 import com.twitter.finatra.FinatraServer
-import net.mm.composer.properties.PropertiesParser.PropertiesParser
-import net.mm.composer.properties.{PropertiesParserImpl, PropertiesValidatorImpl}
+import net.mm.composer.properties.{FieldPropertyRewriterImpl, PropertiesParser, PropertiesParserImpl, PropertiesValidatorImpl}
 import net.mm.composer.relations.execution.{ExecutionPlanBuilderImpl, ExecutionSchedulerImpl}
 import net.mm.composer.relations.{RelationJsonComposer, RelationJsonComposerImpl, RelationRegistry}
 
@@ -15,7 +14,7 @@ trait CompositionProxy {
   }
 
   implicit lazy val propertiesParserFactory: RelationRegistry => Class[_] => PropertiesParser = implicit registry => clazz => {
-    new PropertiesParserImpl andThen new PropertiesValidatorImpl(clazz)
+    new PropertiesParserImpl andThen new FieldPropertyRewriterImpl(clazz) andThen new PropertiesValidatorImpl(clazz)
   }
 
   implicit lazy val executionScheduler = new ExecutionSchedulerImpl

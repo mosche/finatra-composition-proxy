@@ -1,12 +1,6 @@
 package net.mm.composer.properties
 
-import net.mm.composer.properties.PropertiesParser.{PropertiesParser,Error}
 import net.mm.composer.properties.TokenParser._
-
-object PropertiesParser {
-  type Error = String
-  type PropertiesParser = String => Either[Error, Seq[Property]]
-}
 
 class PropertiesParserImpl private(optModifiers: Option[Seq[Modifier[_]]] = None) extends PropertiesParser {
 
@@ -37,6 +31,6 @@ class PropertiesParserImpl private(optModifiers: Option[Seq[Modifier[_]]] = None
 
   private val field = ident map FieldProperty
   private val relation: Parser[RelationProperty] = ident ~ (modifiers | noModifiers) ~ ("(" ~> properties <~ ")") map {
-    case name ~ modifiers ~ properties => RelationProperty(name, modifiers, properties: _*)
+    case name ~ modifiers ~ properties => RelationProperty(name, modifiers, properties)
   }
 }

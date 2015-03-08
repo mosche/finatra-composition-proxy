@@ -1,21 +1,18 @@
 package net.mm.composer.properties
 
-import net.mm.composer.properties.PropertiesValidator.{PropertiesValidator,Error}
 import net.mm.composer.relations.RelationRegistry
 import net.mm.composer.utils.SeqTypeFilterSupport._
 
 
-object PropertiesValidator {
-  type Error = String
-  type PropertiesValidator = Either[Error, Seq[Property]] => Either[Error, Seq[Property]]
-}
-
-class PropertiesValidatorImpl(clazz: Class[_])(implicit relationRegistry: RelationRegistry) extends PropertiesValidator {
+class PropertiesValidatorImpl(clazz: Class[_])(implicit relationRegistry: RelationRegistry) extends PropertiesReader {
 
   private def validate(properties: Seq[Property], clazz: Class[_]): Option[Error] = {
     val clazzFields = clazz.getDeclaredFields.map(_.getName).toSet
 
-    val fieldsToCheck = properties.typeFilter[FieldProperty].map(_.name).toSet -- clazzFields ++ properties.typeFilter[RelationProperty].map(_.name)
+    val fields = properties.typeFilter[FieldProperty].map(_.name).toSet
+    val relations = properties.typeFilter[RelationProperty].map(_.name)
+
+    val fieldsToCheck = fields -- clazzFields ++ relations
 
     properties.filter(p => fieldsToCheck(p.name))
       .map(p => (p, relationRegistry.get(clazz, p.name)))
@@ -30,7 +27,7 @@ class PropertiesValidatorImpl(clazz: Class[_])(implicit relationRegistry: Relati
     }
   }
 
-  override def apply(parsedProperties: Either[PropertiesValidator.Error, Seq[Property]]): Either[PropertiesValidator.Error, Seq[Property]] = {
+  override def apply(parsedProperties: Either[Error, Seq[Property]]): Either[Error, Seq[Property]] = {
     parsedProperties.right.flatMap{ properties =>
       validate(properties, clazz).toLeft(properties)
     }
