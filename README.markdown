@@ -12,8 +12,6 @@ Among the various challenges, there's a lot of discussions around the *compositi
 Talking about a single REST endpoint, the goal certainly shouldn't be to transform one monolith into another (your proxy) and build lots of beautiful manageable *microservice* around it.
 But dealing with various devices, particularly talking about mobile, there certainly is an advantage in aggregating the various calls to a multitude of services into some few ones.
 
-Not long ago Clifton Cunningham presented [*Compoxure*](https://github.com/tes/compoxure) in [his blog](https://medium.com/@clifcunn/nodeconf-eu-29dd3ed500ec) to tackle the UI / website composition challenge:
-
 Already some while ago Twitter presented [*Stitch*](https://www.youtube.com/watch?v=VVpmMfT8aYw), a library for composing *Finagle* services.
 *Stitch* provides a concise Scala query API which facilitates a readable expression of application logic hiding the complexity of bulk RPC calls.
 That way *Stitch* efficiently allows Twitter to build Services on top of other Services. But, unfortunately, *Stitch* is not open-sourced yet.
@@ -108,19 +106,17 @@ Properties are queried according to the following grammar:
 
 ### The execution plan
 
-The *properties* query is first parsed into a properties tree. This tree is then transformed into an optimized version, the *execution plan*.
+Based on a properties tree an optimized *execution plan* is generated according to the following optimizations:
 
-When building the execution plan, two rather simple optimizations are taken into account:
-
-1. Whenever nested relations in the tree are using the same Id extractor  as their parent relation,
+1. Whenever nested relations in the tree are using the same *Id extractor* as their parent relation,
    such relations are moved upwards in the graph to increase parallelism during execution.
-   Therefore relations must be invariant on the id. That will say applying the Id extractor on the relation result(s) will produce the same Id again.
+   Therefore relations must be invariant on the id. That will say applying the *Id extractor* on the relation result(s) will produce the same Id again.
    If this is not the case for a particular relation it must be marked with the execution hint *NonBijective*.
 
 2. Once subtrees are sorted according to their depth, execution can later be split into two phases:
-   From the flattest to the deepest subtree all available Ids are collected first.
+   From the flattest to the deepest subtree all available Ids for a *relation source* are collected first - even accross multiple levels in the tree.
    Afterwards, depth first from the deepest to the flattest subtree (again respecting the two phases for following subtrees),
-   a batch source executor will load the data for all collected Ids.
+   the *batch source executor* will load the data for all collected Ids.
    As relations trees tend to be highly unbalanced this simple execution strategy works really well.
 
 
