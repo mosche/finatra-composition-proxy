@@ -30,8 +30,6 @@ Instead, based on a configuration, an entire REST API with some nifty features i
 #### Example: Controller by configuration
 
 ```scala
-  // A shop controller registering the following composition resources:
-  //
   // GET /shop/products/:id
   // GET /shop/products/:id/reviews
   // GET /shop/reviews/:id
@@ -55,17 +53,18 @@ Instead, based on a configuration, an entire REST API with some nifty features i
     .buildController("/shop")
 ```
 
-*Fields* as well as *relations* (by means of a RPC call) are returned on demand in order to address the specific information need as well as limitations of an API client.
-That will say service composition is exposed to the client by means of a concise query DSL ([the *properties* DSL](#the-properties-dsl)). Leveraging the query DSL code complexity is significantly reduced both on client as well as the server side.
+*Fields* and *relations* (by means of a RPC call) are returned on demand by means of a concise query DSL ([the *properties* DSL](#the-properties-dsl)) in order to address the specific information need as well as limitations of an API client. Leveraging the query DSL code complexity is significantly reduced both on client as well as the server side.
 
-Every *properties* query is translated into an optimized [*execution plan*](#the-execution-plan) in order to enhance performance as much as possible.
-Optimizations taken into account are:
+### Query optimization
+
+Queries are translated into an optimized [*execution plan*](#the-execution-plan) in order to enhance performance as much as possible. Optimizations taken into account are:
 
 - rearrangement of *relations* in order to maximize parallelism
-- bulk requests (if possible even accross multiple composition levels)
-- a caching layer
-
-While this approach is more powerful in it's specific usage case, it obviously is less flexible than the generic DSL of *Clump*.
+  Example: Even though *comments* is a relation of *reviews*, both can be fetched in parallel as they are using the same *Id extractor*.
+- bulk requests even accross multiple composition levels
+  Example: Assuming there is a relation *creator* of *comments*, both the *reviewers* of *reviews* as well as the *creators* of *comments* can be fetched using one bulk request.
+- a caching layer on request level
+  Example: In some cases execution will require fetching data immediately to resolve further nested relations. To address such cases data is cached to avoid fetching the same data once again. 
 
 ### The properties DSL
 
