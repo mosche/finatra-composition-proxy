@@ -60,11 +60,16 @@ Instead, based on a configuration, an entire REST API with some nifty features i
 Queries are translated into an optimized [*execution plan*](#the-execution-plan) in order to enhance performance as much as possible. Optimizations taken into account are:
 
 - rearrangement of *relations* in order to maximize parallelism
-  Example: Even though *comments* is a relation of *reviews*, both can be fetched in parallel as they are using the same *Id extractor*.
-- bulk requests even accross multiple composition levels
-  Example: Assuming there is a relation *creator* of *comments*, both the *reviewers* of *reviews* as well as the *creators* of *comments* can be fetched using one bulk request.
-- a caching layer on request level
-  Example: In some cases execution will require fetching data immediately to resolve further nested relations. To address such cases data is cached to avoid fetching the same data once again. 
+ 
+  **Example**: Even though *comments* is defined as a relation of *reviews*, both can be fetched in parallel as they are using the same *Id extractor*.
+
+- bulk requests accross multiple composition levels
+  
+  **Example**: Assuming there is a relation *creator* of *comments*, both the *reviewers* of *reviews* as well as the *creators* of *comments* can be fetched using one bulk request.
+
+- a caching layer on the request level
+  
+  **Example**: In some cases execution will require fetching data immediately to resolve further nested relations. To address such cases data is cached to avoid fetching the same data once again. 
 
 ### The properties DSL
 
