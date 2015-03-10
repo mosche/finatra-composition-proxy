@@ -44,8 +44,6 @@ Among the various challenges, there's a lot of discussions around the <em>compos
 <p>Talking about a single REST endpoint, the goal certainly shouldn't be to transform one monolith into another (your proxy) and build lots of beautiful manageable <em>microservice</em> around it.
 But dealing with various devices, particularly talking about mobile, there certainly is an advantage in aggregating the various calls to a multitude of services into some few ones.</p>
 
-<p>Not long ago Clifton Cunningham presented <a href="https://github.com/tes/compoxure"><em>Compoxure</em></a> in <a href="https://medium.com/@clifcunn/nodeconf-eu-29dd3ed500ec">his blog</a> to tackle the UI / website composition challenge:</p>
-
 <p>Already some while ago Twitter presented <a href="https://www.youtube.com/watch?v=VVpmMfT8aYw"><em>Stitch</em></a>, a library for composing <em>Finagle</em> services.
 <em>Stitch</em> provides a concise Scala query API which facilitates a readable expression of application logic hiding the complexity of bulk RPC calls.
 That way <em>Stitch</em> efficiently allows Twitter to build Services on top of other Services. But, unfortunately, <em>Stitch</em> is not open-sourced yet.</p>
@@ -64,74 +62,84 @@ Instead, based on a configuration, an entire REST API with some nifty features i
 <h4>
 <a id="example-controller-by-configuration" class="anchor" href="#example-controller-by-configuration" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example: Controller by configuration</h4>
 
-<div class="highlight highlight-scala"><pre>  <span class="pl-c">// A shop controller registering the following composition resources:</span>
-  <span class="pl-c">//</span>
-  <span class="pl-c">// GET /shop/categories/:id</span>
-  <span class="pl-c">// GET /shop/categories/:id/products</span>
-  <span class="pl-c">// GET /shop/categories/:id/size</span>
-  <span class="pl-c">// GET /shop/products/:id</span>
+<div class="highlight highlight-scala"><pre>  <span class="pl-c">// GET /shop/products/:id</span>
   <span class="pl-c">// GET /shop/products/:id/reviews</span>
   <span class="pl-c">// GET /shop/reviews/:id</span>
-  <span class="pl-c">// GET /shop/users/:id</span>
-  <span class="pl-c">// GET /shop/users/:id/myreviews</span>
+  <span class="pl-c">// GET /shop/reviews/:id/comments</span>
 
   <span class="pl-s">lazy</span> <span class="pl-k">val</span> <span class="pl-en">shopController</span><span class="pl-k">:</span> <span class="pl-en">Controller</span> <span class="pl-k">=</span> <span class="pl-en">CompositionControllerBuilder</span>()
-    .register[<span class="pl-en">Category</span>](<span class="pl-s1"><span class="pl-pds">"</span>categories<span class="pl-pds">"</span></span>)
-    .as(categoryKey, productService.getCategories)
-    .having(
-      <span class="pl-s1"><span class="pl-pds">"</span>products<span class="pl-pds">"</span></span> <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-en">ToMany</span>(categoryKey, productService.getProductsByCategories),
-      <span class="pl-s1"><span class="pl-pds">"</span>size<span class="pl-pds">"</span></span> <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-en">ToOne</span>(categoryKey, productService.getCategorySize)
-    )
     .register[<span class="pl-en">Product</span>](<span class="pl-s1"><span class="pl-pds">"</span>products<span class="pl-pds">"</span></span>)
-    .as(productKey, productService.getProducts)
+    .as(productIdExtractor, productService.getProducts)
     .having(
-      <span class="pl-s1"><span class="pl-pds">"</span>categories<span class="pl-pds">"</span></span> <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-en">ToOne</span>(categoryKey, productService.getCategories, <span class="pl-en">Array</span>),
-      <span class="pl-s1"><span class="pl-pds">"</span>reviews<span class="pl-pds">"</span></span> <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-en">ToMany</span>(productKey, reviewService.getReviewsByProduct)
+      <span class="pl-s1"><span class="pl-pds">"</span>categories<span class="pl-pds">"</span></span> <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-en">ToOne</span>(categoryIdExtractor, productService.getCategories, <span class="pl-en">Array</span>),
+      <span class="pl-s1"><span class="pl-pds">"</span>reviews<span class="pl-pds">"</span></span> <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-en">ToMany</span>(productIdExtractor, reviewService.getReviewsByProduct)
     )
     .register[<span class="pl-en">Review</span>](<span class="pl-s1"><span class="pl-pds">"</span>reviews<span class="pl-pds">"</span></span>)
-    .as(reviewKey, reviewService.getReviews)
+    .as(reviewIdExtractor, reviewService.getReviews)
     .having(
-      <span class="pl-s1"><span class="pl-pds">"</span>reviewer<span class="pl-pds">"</span></span> <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-en">ToOne</span>(userKey, userService.getUsers),
-      <span class="pl-s1"><span class="pl-pds">"</span>product<span class="pl-pds">"</span></span> <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-en">ToOne</span>(productKey, productService.getProducts),
-      <span class="pl-s1"><span class="pl-pds">"</span>categories<span class="pl-pds">"</span></span> <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-en">ToMany</span>(productKey, productService.getCategoriesByProduct)
-    )
-    .register[<span class="pl-en">User</span>](<span class="pl-s1"><span class="pl-pds">"</span>users<span class="pl-pds">"</span></span>)
-    .as(userKey, userService.getUsers)
-    .having(
-      <span class="pl-s1"><span class="pl-pds">"</span>myreviews<span class="pl-pds">"</span></span> <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-en">ToMany</span>(userKey, reviewService.getReviewsByUser)
+      <span class="pl-s1"><span class="pl-pds">"</span>reviewer<span class="pl-pds">"</span></span> <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-en">ToOne</span>(userIdExtractor, userService.getUsers),
+      <span class="pl-s1"><span class="pl-pds">"</span>product<span class="pl-pds">"</span></span> <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-en">ToOne</span>(productIdExtractor, productService.getProducts),
+      <span class="pl-s1"><span class="pl-pds">"</span>categories<span class="pl-pds">"</span></span> <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-en">ToMany</span>(productIdExtractor, productService.getCategoriesByProduct),
+      <span class="pl-s1"><span class="pl-pds">"</span>comments<span class="pl-pds">"</span></span> <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-en">ToMany</span>(reviewIdExtractor, commentService.getCommentsByReview)
     )
     .buildController(<span class="pl-s1"><span class="pl-pds">"</span>/shop<span class="pl-pds">"</span></span>)</pre></div>
 
-<p><em>Fields</em> as well as <em>relations</em> (by means of a RPC call) are returned on demand in order to address the specific information need as well as limitations of an API client.
-That will say service composition is exposed to the client by means of a concise query DSL (<a href="#the-properties-dsl">the <em>properties</em> DSL</a>). Leveraging the query DSL code complexity is significantly reduced both on client as well as the server side.</p>
+<p><em>Fields</em> and <em>relations</em> (by means of a RPC call) are returned on demand by means of a concise query DSL (<a href="#the-properties-dsl">the <em>properties</em> DSL</a>) in order to address the specific information need as well as limitations of an API client. Leveraging the query DSL code complexity is significantly reduced both on client as well as the server side.</p>
 
-<p>Every <em>properties</em> query is translated into an optimized <em>execution plan</em> in order to enhance performance as much as possible.
-Optimizations taken into account are:</p>
+<h3>
+<a id="query-optimization" class="anchor" href="#query-optimization" aria-hidden="true"><span class="octicon octicon-link"></span></a>Query optimization</h3>
+
+<p>Queries are translated into an optimized <a href="#the-execution-plan"><em>execution plan</em></a> in order to enhance performance as much as possible. Optimizations taken into account are:</p>
 
 <ul>
-<li>rearrangement of <em>relations</em> in order to maximize parallelism</li>
-<li>bulk requests (if possible even accross multiple composition levels)</li>
-<li>a caching layer</li>
-</ul>
+<li>
+<p>rearrangement of <em>relations</em> in order to maximize parallelism <a href="#the-execution-plan">[more]</a></p>
 
-<p>While this approach is more powerful in it's specific usage case, it obviously is less flexible than the generic DSL of <em>Clump</em>.</p>
+<p><strong>Example</strong>: Even though <em>comments</em> is defined as a relation of <em>reviews</em>, both can be fetched in parallel as they are using the same <em>Id extractor</em>.</p>
+</li>
+<li>
+<p>bulk requests accross multiple composition levels <a href="#the-execution-plan">[more]</a></p>
+
+<p><strong>Example</strong>: Assuming there is a relation <em>creator</em> of <em>comments</em>, both the <em>reviewers</em> of <em>reviews</em> as well as the <em>creators</em> of <em>comments</em> can be fetched using one bulk request.</p>
+</li>
+<li>
+<p>a caching layer on the request level</p>
+
+<p><strong>Example</strong>: In some cases execution will require fetching data immediately to resolve further nested relations. To address such cases data is cached to avoid fetching the same data once again. </p>
+</li>
+</ul>
 
 <h3>
 <a id="the-properties-dsl" class="anchor" href="#the-properties-dsl" aria-hidden="true"><span class="octicon octicon-link"></span></a>The properties DSL</h3>
 
-<p>Inspired by Facebook's <a href="https://developers.facebook.com/docs/graph-api/using-graph-api/#fieldexpansion"><em>field expansion (Graph API)</em></a>, <em>fields</em> and <em>relations</em> are requested on demand.</p>
+<p>Similar to Facebook's <a href="https://developers.facebook.com/docs/graph-api/using-graph-api/#fieldexpansion"><em>field expansion (Graph API)</em></a>, <em>fields</em> and <em>relations</em> are requested on demand.</p>
 
 <p>Properties are queried according to the following grammar:</p>
 
-<ul>
-<li>Property =&gt; <em>Relation</em> <strong>|</strong> <em>Field</em>
-</li>
-<li>Field =&gt; <em>AlphaNumericIdentifier</em>
-</li>
-<li>Relation =&gt; <em>Field</em> . ( <strong>(</strong> <em>Property</em>, <strong>)</strong> <strong>*</strong> <em>Property</em> )</li>
-</ul>
+<pre><code>  field -&gt; AlphaNumericIdentifier
+  relation -&gt; field '(' properties ')' 
+  property -&gt; field | relation
+  properties -&gt; ( property ',' ) property
+</code></pre>
 
-<p>where Relation is appended to the request as follows: ...?properties= <em>Relation</em></p>
+<p><em>Properties</em> are then appended to the request as a query parameter <em>properties</em>, e.g. <code>?properties=id,title,reviews(stars)</code></p>
+
+<h3>
+<a id="the-execution-plan" class="anchor" href="#the-execution-plan" aria-hidden="true"><span class="octicon octicon-link"></span></a>The execution plan</h3>
+
+<p>Based on a properties tree an optimized <em>execution plan</em> is generated according to the following optimizations:</p>
+
+<ol>
+<li><p>Whenever nested relations in the tree are using the same <em>Id extractor</em> as their parent relation,
+such relations are moved upwards in the graph to increase parallelism during execution.
+Therefore relations must be invariant on the id. That will say applying the <em>Id extractor</em> on the relation result(s) will produce the same Id again.
+If this is not the case for a particular relation it must be marked with the execution hint <em>NonBijective</em>.</p></li>
+<li><p>Once subtrees are sorted according to their depth, execution can later be split into two phases:
+From the flattest to the deepest subtree all available Ids for a <em>relation source</em> are collected first - even accross multiple levels in the tree.
+Afterwards, depth first from the deepest to the flattest subtree (again respecting the two phases for following subtrees),
+the <em>batch source executor</em> will load the data for all collected Ids.
+As relations trees tend to be highly unbalanced this simple execution strategy works really well.</p></li>
+</ol>
 
 <h2>
 <a id="example" class="anchor" href="#example" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example</h2>
@@ -149,7 +157,7 @@ Optimizations taken into account are:</p>
 <a id="example-1-load-a-product-with-id-and-title-only" class="anchor" href="#example-1-load-a-product-with-id-and-title-only" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example 1: Load a product with id and title only<br>
 </h5>
 
-<pre><code>curl http://localhost:7070/shop/products/1?properties=product(id,title)
+<pre><code>curl http://localhost:7070/shop/products/1?properties=id,title
 </code></pre>
 
 <div class="highlight highlight-javascript"><pre>{
@@ -161,7 +169,7 @@ Optimizations taken into account are:</p>
 <a id="example-2-load-a-product-with-all-its-categories-reviews-and-the-reviewer" class="anchor" href="#example-2-load-a-product-with-all-its-categories-reviews-and-the-reviewer" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example 2: Load a product with all its categories, reviews and the reviewer<br>
 </h5>
 
-<pre><code>curl http://localhost:7070/shop/products/1?properties=product(id,title,reviews(stars,review,reviewer(username)),categories(id))
+<pre><code>curl http://localhost:7070/shop/products/1?properties=id,title,reviews(stars,review,reviewer(username)),categories(id)
 </code></pre>
 
 <div class="highlight highlight-javascript"><pre>{
