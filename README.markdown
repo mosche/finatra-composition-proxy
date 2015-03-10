@@ -32,25 +32,12 @@ Instead, based on a configuration, an entire REST API with some nifty features i
 ```scala
   // A shop controller registering the following composition resources:
   //
-  // GET /shop/categories/:id
-  // GET /shop/categories/:id/products
-  // GET /shop/categories/:id/size
-  // GET /shop/comment/:id
   // GET /shop/products/:id
   // GET /shop/products/:id/reviews
   // GET /shop/reviews/:id
   // GET /shop/reviews/:id/comments
-  // GET /shop/users/:id
-  // GET /shop/users/:id/comments
-  // GET /shop/users/:id/reviews
 
   lazy val shopController: Controller = CompositionControllerBuilder()
-    .register[Category]("categories")
-    .as(categoryIdExtractor, productService.getCategories)
-    .having(
-      "products" -> ToMany(categoryIdExtractor, productService.getProductsByCategories, NonBijective),
-      "size" -> ToOne(categoryIdExtractor, productService.getCategorySize)
-    )
     .register[Product]("products")
     .as(productIdExtractor, productService.getProducts)
     .having(
@@ -64,17 +51,6 @@ Instead, based on a configuration, an entire REST API with some nifty features i
       "product" -> ToOne(productIdExtractor, productService.getProducts),
       "categories" -> ToMany(productIdExtractor, productService.getCategoriesByProduct),
       "comments" -> ToMany(reviewIdExtractor, commentService.getCommentsByReview)
-    )
-    .register[Comment]("comment")
-    .as(commentIdExtractor, commentService.getComments)
-    .having(
-      "user" -> ToOne(userIdExtractor, userService.getUsers)
-    )
-    .register[User]("users")
-    .as(userIdExtractor, userService.getUsers)
-    .having(
-      "reviews" -> ToMany(userIdExtractor, reviewService.getReviewsByUser),
-      "comments" -> ToMany(userIdExtractor, commentService.getCommentsByUser)
     )
     .buildController("/shop")
 ```
@@ -97,10 +73,12 @@ Similar to Facebook's [*field expansion (Graph API)*](https://developers.faceboo
 
 Properties are queried according to the following grammar:
 
-- field -> *AlphaNumericIdentifier*
-- relation -> *field* '(' *properties* ')' 
-- property -> *field* | *relation*
-- properties -> ( *property* ',' )* *property*
+```
+  field -> *AlphaNumericIdentifier*
+  relation -> *field* '(' *properties* ')' 
+  property -> *field* | *relation*
+  properties -> ( *property* ',' )* *property*
+```
 
 *Properties* are then appended to the request as a query parameter *properties*, e.g. `?properties=id,title,reviews(stars)`
 
