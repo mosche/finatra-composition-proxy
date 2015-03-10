@@ -59,11 +59,11 @@ Instead, based on a configuration, an entire REST API with some nifty features i
 
 Queries are translated into an optimized [*execution plan*](#the-execution-plan) in order to enhance performance as much as possible. Optimizations taken into account are:
 
-- rearrangement of *relations* in order to maximize parallelism
+- rearrangement of *relations* in order to maximize parallelism [[more]](#the-execution-plan)
  
   **Example**: Even though *comments* is defined as a relation of *reviews*, both can be fetched in parallel as they are using the same *Id extractor*.
 
-- bulk requests accross multiple composition levels
+- bulk requests accross multiple composition levels [[more]](#the-execution-plan)
   
   **Example**: Assuming there is a relation *creator* of *comments*, both the *reviewers* of *reviews* as well as the *creators* of *comments* can be fetched using one bulk request.
 
