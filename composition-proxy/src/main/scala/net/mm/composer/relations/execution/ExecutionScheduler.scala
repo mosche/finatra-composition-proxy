@@ -41,20 +41,14 @@ class ExecutionSchedulerImpl extends ExecutionScheduler {
 
   class ExecutionPlanRunner(tasks: ExecutionPlan) extends Runner {
 
+    private type Executors[Id, T] = mutable.Map[Relation.Source[Id, T], BatchSourceExecutor[Id, T]]
+    private val executors: Executors[_, _] = mutable.Map.empty
+
     def apply(any: Any): Future[RelationDataSource] = apply(Seq(any))
 
     def apply(seq: Iterable[Any]): Future[RelationDataSource] = schedule(tasks, seq).map(_ =>
-        new RelationDataSource(executors.mapValues(_.getResult()).toMap)
+      new RelationDataSource(executors.mapValues(_.getResult()).toMap)
     )
-
-    private type Executors[Id, T] = mutable.Map[Relation.Source[Id, T], BatchSourceExecutor[Id, T]]
-    private val executors:Executors[_,_] = mutable.Map.empty
-
-    implicit private class BatchSource[Id, T](source: Relation.Source[Id, T]){
-      def batch: BatchSourceExecutor[Id, T] = executors.synchronized {
-        executors.asInstanceOf[Executors[Id,T]].getOrElseUpdate(source, new BatchSourceExecutor(source))
-      }
-    }
 
     /**
      * Schedule execution according to the given execution plan depth first in reverse order.
@@ -63,28 +57,25 @@ class ExecutionSchedulerImpl extends ExecutionScheduler {
       logger.ifTrace(s"Scheduling tasks ${tasks.names} for ${seq.headOption.map(_.getClass.getSimpleName).getOrElse("Nothing")}")
 
       // register ids first to allow aggregation of requests
-      val idsPerTask = tasks.map(task => (task, registerIds(task.relation.asInstanceOf[Relation[From, _, Id]], seq))).toMap
+      val idsPerTask = tasks.map(task => task -> registerIds(task.relation.asInstanceOf[Relation[From, _, Id]], seq)).toMap
 
       // execute in reverse order (from right) and fork independent executions
-      val forkedExecution = tasks.foldRight[Seq[(Set[TaskNode], Future[_])]](Seq.empty) {
-        case (currentTask, taskAkk) =>
-          val (dependent, independent) = taskAkk.partition(_._1.exists(_ dependsOn currentTask))
+      val executionNodes = tasks.foldRight[Seq[ExecutionNode]](Seq.empty) {
+        case (currentTask, executionNodes) =>
+          val (dependent, independent) = executionNodes.partition(_.tasks.exists(_ dependsOn currentTask))
           if (dependent.isEmpty) {
-            // fork execution
-            logger.ifTrace(s"Forking execution for task ${currentTask.name}")
-            (Set(currentTask), execute(currentTask, idsPerTask(currentTask))) +: independent
+            independent.forkExecution(currentTask, idsPerTask(currentTask))
           } else {
-            // join execution on dependent plans
-            val dependentTasks = dependent.flatMap(_._1).toSet
-            logger.ifTrace(s"Joining execution for task ${currentTask.name} due to ${dependentTasks.names}")
-            val joinedFuture = Future.join(dependent.map(_._2)).flatMap(_ => execute(currentTask, idsPerTask(currentTask)))
-            (dependentTasks, joinedFuture) +: independent
+            dependent.joinExecution(currentTask, idsPerTask(currentTask), independent)
           }
       }
-      // join all independent executions
-      Future.join(forkedExecution.map(_._2))
+      // join all independent execution nodes
+      executionNodes.join()
     }
 
+    /**
+     * Extract ids and add to batch source for later processing
+     */
     private def registerIds[From, Id](relation: Relation[From, _, Id], seq: Iterable[From]): Set[Id] = {
       val ids: Set[Id] = seq.flatMap(relation.idExtractor).toSet
       relation.source.batch.addIds(ids)
@@ -92,7 +83,7 @@ class ExecutionSchedulerImpl extends ExecutionScheduler {
     }
 
     /**
-     * Execute a task with its subtasks.
+     * Execute a task with its subtasks
      */
     private def execute[Id, T](task: TaskNode, ids: Set[Id]): Future[Any] = {
       // resolve and descend depth first to load child nodes
@@ -112,5 +103,44 @@ class ExecutionSchedulerImpl extends ExecutionScheduler {
         case Throw(e) => logger.ifWarning(e, s"Failed to execute ${Seq(task).debugString} with $ids")
       }
     }
+
+    implicit private class BatchSource[Id, T](source: Relation.Source[Id, T]) {
+      def batch: BatchSourceExecutor[Id, T] = executors.synchronized {
+        executors.asInstanceOf[Executors[Id, T]].getOrElseUpdate(source, new BatchSourceExecutor(source))
+      }
+    }
+
+    implicit private class ExecutionNodes(nodes: Seq[ExecutionNode]){
+      /**
+       * Add a new execution node for the given task
+       */
+      def forkExecution[Id](task: TaskNode, ids: Set[Id]) = {
+        logger.ifTrace(s"Forking execution for task ${task.name}")
+        ExecutionNode(
+          tasks = Set(task),
+          future = execute(task, ids)
+        ) +: nodes
+      }
+
+      /**
+       * Build a new execution node by joining the nodes of this followed by the execution of the given task.
+       * Independent nodes are simply appended.
+       */
+      def joinExecution[Id](task: TaskNode, ids: Set[Id], independent: Seq[ExecutionNode]) = {
+        val dependentTasks = nodes.flatMap(_.tasks).toSet
+        logger.ifTrace(s"Joining execution for task ${task.name} due to ${dependentTasks.names}")
+        ExecutionNode(
+          tasks = dependentTasks + task,
+          future = join().flatMap(_ => execute(task, ids))
+        ) +: independent
+      }
+
+      /**
+       * Join all async independent execution nodes
+       */
+      def join(): Future[_] = Future.join(nodes.map(_.future))
+    }
   }
+
+  private case class ExecutionNode(tasks: Set[TaskNode], future: Future[_])
 }
