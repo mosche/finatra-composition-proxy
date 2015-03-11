@@ -81,7 +81,7 @@ Properties are queried according to the following grammar:
   field -> AlphaNumericIdentifier
   relation -> field '(' properties ')' 
   property -> field | relation
-  properties -> ( property ',' ) property
+  properties -> ( property ',' )* property
 ```
 
 *Properties* are then appended to the request as a query parameter *properties*, e.g. `?properties=id,title,reviews(stars)`
