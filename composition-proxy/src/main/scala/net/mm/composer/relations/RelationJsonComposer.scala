@@ -22,7 +22,7 @@ class RelationJsonComposerImpl(implicit executionScheduler: ExecutionScheduler, 
 
   private val mapper = DefaultJacksonJsonSerializer.mapper
 
-  type ChildRelations = ParSeq[(RelationProperty, AnyRelation)]
+  type ChildRelations = Seq[(RelationProperty, AnyRelation)]
   type Fields = Seq[String]
 
   private implicit class LoadedRelation[From, Target, Id](relation: Relation[From, Target, Id])(implicit dataSource: RelationDataSource) {
@@ -65,11 +65,11 @@ class RelationJsonComposerImpl(implicit executionScheduler: ExecutionScheduler, 
    * Load relations for properties of clazz
    * @param properties the properties (only relation properties are considered)
    * @param clazz the current clazz
-   * @return a ParSeq of relations to facilitate parallel composition
+   * @return the relations
    */
   private def loadRelations(properties: Seq[Property], clazz: Class[_]): ChildRelations = properties
     .typeFilter[RelationProperty]
-    .par.flatMap(prop =>
+    .flatMap(prop =>
       registry.get(clazz, prop.name).map(rel => (prop, rel))
     )
 
