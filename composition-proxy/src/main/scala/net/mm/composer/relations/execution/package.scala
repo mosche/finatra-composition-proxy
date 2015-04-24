@@ -6,7 +6,7 @@ package object execution {
 
   type ExecutionPlan = Seq[TaskNode]
 
-  case class TaskNode(val name: String, val relation: AnyRelation, val subTasks: TaskNode*) {
+  case class TaskNode(name: String, relation: AnyRelation, subTasks: TaskNode*) {
     val costs: Int = 1 + subTasks.map(_.costs).sum
 
     // collected sources of this node
