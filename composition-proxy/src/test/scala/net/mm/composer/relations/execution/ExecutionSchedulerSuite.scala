@@ -42,7 +42,7 @@ class ExecutionSchedulerSuite extends FunSuite with TestCases {
   private def scheduler = new ExecutionSchedulerImpl
 
   test("empty execution plan") {
-    scheduler.run(Seq.empty)(users.values).await shouldBe RelationDataSource()
+    scheduler.run(Seq.empty)(users.values).await.dataMap shouldBe Map.empty
   }
 
   test("users with myreviews (ToMany)") {
@@ -52,7 +52,7 @@ class ExecutionSchedulerSuite extends FunSuite with TestCases {
 
     val result = scheduler.run(plan)(users.values).await
 
-    result shouldBe RelationDataSource(
+    result.dataMap shouldBe Map(
       getReviewsByUser -> reviewsByUser
     )
   }
@@ -65,7 +65,7 @@ class ExecutionSchedulerSuite extends FunSuite with TestCases {
 
     val result = scheduler.run(plan)(users.values).await
 
-    result shouldBe RelationDataSource(
+    result.dataMap shouldBe Map(
       getReviewsByUser -> reviewsByUser,
       getProducts -> products
     )
@@ -85,7 +85,7 @@ class ExecutionSchedulerSuite extends FunSuite with TestCases {
 
     val result = scheduler.run(plan)(products.values).await
     
-    result shouldBe RelationDataSource(
+    result.dataMap shouldBe Map(
       getReviewsByProduct -> reviewsByProduct,
       getCategoriesByProduct -> categoriesByProduct,
       getUsers -> users
@@ -105,7 +105,7 @@ class ExecutionSchedulerSuite extends FunSuite with TestCases {
 
     val result = scheduler.run(plan)(products.values).await
 
-    result shouldBe RelationDataSource(
+    result.dataMap shouldBe Map(
       getReviewsByProduct -> reviewsByProduct,
       getCategoriesByProduct -> categoriesByProduct
     )
