@@ -90,12 +90,12 @@ class ExecutionSchedulerImpl extends ExecutionScheduler {
       val res = task.relation match {
         case rel: ToOne[_, T, Id] => for {
           result <- rel.source.batch.execute(ids)
-          _ <- schedule(task.subTasks, result.values.toSeq)
+          _ <- schedule(task.subTasks, result.values)
         } yield ()
 
         case rel: ToMany[_, T, Id] => for {
           result <- rel.source.batch.execute(ids)
-          _ <- schedule(task.subTasks, result.values.flatten.toSeq)
+          _ <- schedule(task.subTasks, result.values.flatten)
         } yield ()
       }
       res.respond {
