@@ -56,30 +56,26 @@ class ExecutionSchedulerImpl extends ExecutionScheduler {
     private def schedule[From, Id](tasks: ExecutionPlan, seq: Iterable[From]): Future[Any] = {
       logger.ifTrace(s"Scheduling tasks ${tasks.names} for ${seq.headOption.map(_.getClass.getSimpleName).getOrElse("Nothing")}")
 
-      // register ids first to allow aggregation of requests
-      val idsPerTask = tasks.map(task => task -> registerIds(task.relation.asInstanceOf[Relation[From, _, Id]], seq)).toMap
+      // extract ids left to right and memorize to allow aggregation of requests
+      val idsPerTask = tasks.foldLeft(mutable.Map.empty[TaskNode, Set[Id]]){ (idsMap, task) =>
+        val relation = task.relation.asInstanceOf[Relation[From, _, Id]]
+        val ids = seq.flatMap(relation.idExtractor).toSet
+        // SIDE EFFECT: add to batch source for later processing
+        relation.source.batch.addIds(ids)
+        idsMap += task -> ids
+      }
 
       // execute in reverse order (from right) and fork independent executions
-      val executionNodes = tasks.foldRight[Seq[ExecutionNode]](Seq.empty) {
-        case (currentTask, executionNodes) =>
-          val (dependent, independent) = executionNodes.partition(_.tasks.exists(_ dependsOn currentTask))
-          if (dependent.isEmpty) {
-            independent.forkExecution(currentTask, idsPerTask(currentTask))
-          } else {
-            dependent.joinExecution(currentTask, idsPerTask(currentTask), independent)
-          }
+      val executionNodes = tasks.foldRight(Seq.empty[ExecutionNode]) { (currentTask, executionNodes) =>
+        val (dependent, independent) = executionNodes.partition(_.tasks.exists(_ dependsOn currentTask))
+        if (dependent.isEmpty) {
+          independent.forkExecution(currentTask, idsPerTask(currentTask))
+        } else {
+          dependent.joinExecution(currentTask, idsPerTask(currentTask), independent)
+        }
       }
       // join all independent execution nodes
       executionNodes.join()
-    }
-
-    /**
-     * Extract ids and add to batch source for later processing
-     */
-    private def registerIds[From, Id](relation: Relation[From, _, Id], seq: Iterable[From]): Set[Id] = {
-      val ids: Set[Id] = seq.flatMap(relation.idExtractor).toSet
-      relation.source.batch.addIds(ids)
-      ids
     }
 
     /**
