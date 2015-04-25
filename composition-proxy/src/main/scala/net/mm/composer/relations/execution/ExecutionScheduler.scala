@@ -114,7 +114,7 @@ class ExecutionSchedulerImpl extends ExecutionScheduler {
       /**
        * Add a new execution node for the given task
        */
-      def forkExecution[Id](task: TaskNode, ids: Set[Id]) = {
+      def forkExecution[Id](task: TaskNode, ids: Set[Id]): Seq[ExecutionNode] = {
         logger.ifTrace(s"Forking execution for task ${task.name}")
         ExecutionNode(
           tasks = Set(task),
@@ -126,7 +126,7 @@ class ExecutionSchedulerImpl extends ExecutionScheduler {
        * Build a new execution node by joining the nodes of this followed by the execution of the given task.
        * Independent nodes are simply appended.
        */
-      def joinExecution[Id](task: TaskNode, ids: Set[Id], independent: Seq[ExecutionNode]) = {
+      def joinExecution[Id](task: TaskNode, ids: Set[Id], independent: Seq[ExecutionNode]): Seq[ExecutionNode] = {
         val dependentTasks = nodes.flatMap(_.tasks).toSet
         logger.ifTrace(s"Joining execution for task ${task.name} due to ${dependentTasks.names}")
         ExecutionNode(
