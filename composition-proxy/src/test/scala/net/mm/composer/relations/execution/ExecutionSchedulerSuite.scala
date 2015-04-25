@@ -6,7 +6,7 @@ import org.mockito.Mockito.when
 import org.scalatest.FunSuite
 import org.scalatest.Matchers._
 
-class ExecutionSchedulerSuite extends FunSuite with TestCases {
+class ExecutionSchedulerSuite extends FunSuite with Extractors with MockedSources {
 
   val users = Map(
     "steff" -> User("steff"),

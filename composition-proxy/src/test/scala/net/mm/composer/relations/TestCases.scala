@@ -1,6 +1,9 @@
 package net.mm.composer.relations
 
+import net.mm.composer.CompositionControllerBuilder
 import net.mm.composer.relations.Relation._
+import net.mm.composer.relations.execution.ExecutionHint.NonBijective
+import net.mm.composer.relations.execution.SerializationHint.Array
 import org.scalatest.mock.MockitoSugar._
 
 case class Product(id: Int, categoryIds: String*)
@@ -11,8 +14,7 @@ case class Review(id: Int, productId: Int, reviewerId: String)
 
 case class User(username: String)
 
-trait TestCases {
-
+trait Extractors {
   val productIdExtractor = IdExtractor.lift {
     case r: Review => r.productId
     case p: Product => p.id
@@ -31,17 +33,63 @@ trait TestCases {
   val reviewIdExtractor = IdExtractor.lift {
     case r: Review => r.id
   }
+}
 
-  val getProducts = mock[Source[Int, Product]]("getProducts")
-  val getProductsByCategories = mock[Source[String, Seq[Product]]]("getProductsByCategories")
+trait Sources{
+  def getProducts: Source[Int, Product] = ???
+  def getReviewsByProduct: Source[Int, Seq[Review]] = ???
+  def getReviewsByUser: Source[String, Seq[Review]] = ???
+  def getUsers: Source[String, User] = ???
+  def getProductsByCategories: Source[String, Seq[Product]] = ???
+  def getCategorySize: Source[String, Int] = ???
+  def getCategoriesByProduct: Source[Int, Seq[Category]] = ???
+  def getReviews: Source[Int, Review] = ???
+  def getCategories: Source[String, Category] = ???
+}
 
-  val getReviews = mock[Source[Int, Review]]("getReviews")
-  val getReviewsByProduct = mock[Source[Int, Seq[Review]]]("getReviewsByProduct")
-  val getReviewsByUser = mock[Source[String, Seq[Review]]]("getReviewsByUser")
+trait MockedSources extends Sources{
+  override val getProducts = mock[Source[Int, Product]]("getProducts")
+  override val getProductsByCategories = mock[Source[String, Seq[Product]]]("getProductsByCategories")
 
-  val getCategories = mock[Source[String, Category]]("getCategories")
-  val getCategoriesByProduct = mock[Source[Int, Seq[Category]]]("getCategoriesByProduct")
-  val getCategorySize = mock[Source[String, Int]]("getCategorySize")
+  override val getReviews = mock[Source[Int, Review]]("getReviews")
+  override val getReviewsByProduct = mock[Source[Int, Seq[Review]]]("getReviewsByProduct")
+  override val getReviewsByUser = mock[Source[String, Seq[Review]]]("getReviewsByUser")
 
-  val getUsers = mock[Source[String, User]]("getUsers")
+  override val getCategories = mock[Source[String, Category]]("getCategories")
+  override val getCategoriesByProduct = mock[Source[Int, Seq[Category]]]("getCategoriesByProduct")
+  override val getCategorySize = mock[Source[String, Int]]("getCategorySize")
+
+  override val getUsers = mock[Source[String, User]]("getUsers")
+}
+
+trait MockCompositionControllerBuilder {
+  self: Extractors with Sources =>
+
+  lazy val compositionControllerBuilder = CompositionControllerBuilder()
+    .register[Category]("categories")
+    .as(categoryIdExtractor, getCategories)
+    .having(
+      "products" -> ToMany(categoryIdExtractor, getProductsByCategories, NonBijective),
+      "size" -> ToOne(categoryIdExtractor, getCategorySize)
+    )
+    .register[Product]("products")
+    .as(productIdExtractor, getProducts)
+    .having(
+      "categories" -> ToOne(categoryIdExtractor, getCategories, Array),
+      "reviews" -> ToMany(productIdExtractor, getReviewsByProduct)
+    )
+    .register[Review]("reviews")
+    .as(reviewIdExtractor, getReviews)
+    .having(
+      "reviewer" -> ToOne(userIdExtractor, getUsers),
+      "product" -> ToOne(productIdExtractor, getProducts),
+      "categories" -> ToMany(productIdExtractor, getCategoriesByProduct)
+    )
+    .register[User]("users")
+    .as(userIdExtractor, getUsers)
+    .having(
+      "myreviews" -> ToMany(userIdExtractor, getReviewsByUser)
+    )
+
+  implicit lazy val relationRegistry = compositionControllerBuilder.buildRegistry()
 }

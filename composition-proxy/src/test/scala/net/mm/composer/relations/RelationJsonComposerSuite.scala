@@ -10,7 +10,7 @@ import org.scalatest.FunSuite
 import org.scalatest.Matchers._
 import org.scalatest.mock.MockitoSugar.mock
 
-class RelationJsonComposerSuite extends FunSuite with TestCases with TestCasesCompositionControllerBuilder {
+class RelationJsonComposerSuite extends FunSuite with Extractors with MockedSources with MockCompositionControllerBuilder {
 
   val dataSource = mock[RelationDataSource]
 

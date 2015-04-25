@@ -6,7 +6,7 @@ import net.mm.composer.relations._
 import org.openjdk.jmh.annotations._
 
 @State(Scope.Benchmark)
-class PropertiesValidationBenchmark extends TestCases with TestCasesCompositionControllerBuilder{
+class PropertiesValidationBenchmark extends Extractors with MockedSources with MockCompositionControllerBuilder{
 
   val validator = new PropertiesValidatorImpl(classOf[Review])
   val validProperties = Right(Seq(

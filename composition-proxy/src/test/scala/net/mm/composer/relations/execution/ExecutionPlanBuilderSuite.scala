@@ -5,7 +5,7 @@ import net.mm.composer.relations._
 import org.scalatest.FunSuite
 import org.scalatest.Matchers._
 
-class ExecutionPlanBuilderSuite extends FunSuite with TestCasesCompositionControllerBuilder with TestCases{
+class ExecutionPlanBuilderSuite extends FunSuite with Extractors with MockedSources with MockCompositionControllerBuilder {
 
   val executionPlan = new ExecutionPlanBuilderImpl
 
